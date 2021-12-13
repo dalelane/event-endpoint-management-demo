@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: install-ibm-common-services-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  params:
+    # details of the operator to install
+    - name: operator-name
+      value: "ibm-common-service-operator"
+    - name: operator-pod-label
+      value: "app.kubernetes.io/instance=ibm-common-service-operator"
+    - name: operator-namespace
+      value: "openshift-operators"
+    # what we're creating
+    - name: instance-type
+      value: "CommonService"
+    - name: instance-name
+      value: "common-service"
+    # where we're installing
+    - name: deployment-namespace
+      value: "ibm-common-services"
+  pipelineRef:
+    name: pipeline-cp4i
+  workspaces:
+    - name: pipeline-shared-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

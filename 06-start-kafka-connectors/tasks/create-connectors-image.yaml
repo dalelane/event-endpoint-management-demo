@@ -1,0 +1,62 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-kafka-connectors-docker-image
+spec:
+  params:
+    - name: connect-s2i
+      description: name of the source to image resource
+    - name: namespace
+      description: the namespace to deploy the connect image in
+  workspaces:
+    - name: source
+      description: workspace with jar files to include
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        mkdir my-plugins
+
+        #
+        # get jar for the stock prices connector
+        #
+        mkdir my-plugins/stockprices
+        cd my-plugins/stockprices
+        curl -o stockprices.jar --location https://github.com/dalelane/kafka-connect-stockprice-source/releases/download/v0.0.2/kafka-connect-stockprice-source-connector.jar
+        cd ../..
+
+        #
+        # get jars for the datagen connector
+        #
+        mkdir my-plugins/datagen
+        cd my-plugins/datagen
+        cp /workspace/source/kafka-connect-datagen/target/components/packages/confluentinc-kafka-connect-datagen-*-SNAPSHOT/confluentinc-kafka-connect-datagen-*-SNAPSHOT/lib/*.jar .
+        cd ../..
+
+        #
+        # get jars for the datagen connector
+        #
+        mkdir my-plugins/twitter
+        cd my-plugins/twitter
+        cp /workspace/source/kafka-connect-twitter/target/components/packages/jcustenborder-kafka-connect-twitter-*-SNAPSHOT/jcustenborder-kafka-connect-twitter-*-SNAPSHOT/lib/*.jar .
+        cd ../..
+
+        #
+        # verify
+        #
+        ls my-plugins/*
+
+        #
+        # build the docker image
+        #
+
+        BUILD_CONFIG=""
+        while [ "$BUILD_CONFIG" = "" ]
+        do
+          BUILD_CONFIG=`oc get kafkaconnects2i $(params.connect-s2i) -n $(params.namespace) -o jsonpath='{.status.buildConfigName}'`
+          echo "Using build config: $BUILD_CONFIG"
+          sleep 5
+        done
+        oc start-build $BUILD_CONFIG -n $(params.namespace) --from-dir ./my-plugins/

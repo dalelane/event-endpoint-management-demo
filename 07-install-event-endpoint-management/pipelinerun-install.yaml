@@ -1,0 +1,50 @@
+#
+# Creates an instance of the Cloud Pak for Integration
+#  Event Endpoint Management capability
+#
+# Installs the Operator first if it's not already
+#  available.
+#
+# Note that this only deploys the multi-tenant
+#  API Manager "cloud", so the setup pipeline needs
+#  to be run after this to provision/configure
+#  a single instance that is hosted by the cloud
+#  createdd by this install pipeline.
+#
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: install-event-endpoint-management-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  params:
+    # details of the operator to install
+    - name: operator-name
+      value: "ibm-apiconnect"
+    - name: operator-pod-label
+      value: "app.kubernetes.io/component=apiconnect-operator"
+    - name: operator-namespace
+      value: "eventendpointmanagement"
+    # what we're creating
+    - name: instance-type
+      value: "eventendpointmanager"
+    - name: instance-name
+      value: "eem"
+    # where we're installing
+    - name: deployment-namespace
+      value: "eventendpointmanagement"
+  pipelineRef:
+    name: pipeline-cp4i
+  workspaces:
+    - name: pipeline-shared-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi
+  # APIC installs can be very slow, so a generous
+  #  timeout is needed
+  timeout: "2h0m0s"

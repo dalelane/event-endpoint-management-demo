@@ -1,0 +1,50 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-deployer-kafkaconnect-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - patch
+      - get
+      - delete
+  - apiGroups:
+      - eventstreams.ibm.com
+    resources:
+      - eventstreams
+    verbs:
+      - get
+  - apiGroups:
+      - eventstreams.ibm.com
+    resources:
+      - kafkatopics
+      - kafkausers
+      - kafkaconnects2is
+      - kafkaconnectors
+    verbs:
+      - get
+      - create
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - create
+      - patch
+  - apiGroups:
+      - build.openshift.io
+    resources:
+      - buildconfigs
+      - buildconfigs/instantiatebinary
+    verbs:
+      - get
+      - list
+      - create

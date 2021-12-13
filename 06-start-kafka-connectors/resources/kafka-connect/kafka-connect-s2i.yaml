@@ -1,0 +1,65 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: KafkaConnectS2I
+metadata:
+  name: eem-demo-connectors
+  annotations:
+    eventstreams.ibm.com/use-connector-resources: "true"
+spec:
+  version: 2.8.0
+  replicas: 2
+  bootstrapServers: es-kafka-bootstrap.eventstreams.svc:9093
+  template:
+    pod:
+      imagePullSecrets: []
+      metadata:
+        annotations:
+          eventstreams.production.type: CloudPakForIntegrationNonProduction
+          productID: 2a79e49111f44ec3acd89608e56138f5
+          productName: IBM Event Streams for Non Production
+          productVersion: 10.4.0
+          productMetric: VIRTUAL_PROCESSOR_CORE
+          productChargedContainers: eem-demo-connectors-connect
+          cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+          cloudpakName: IBM Cloud Pak for Integration
+          cloudpakVersion: 2021.3.1
+          productCloudpakRatio: "2:1"
+  resources:
+    requests:
+      cpu: 2048m
+      memory: 1Gi
+    limits:
+      cpu: 4096m
+      memory: 1Gi
+  config:
+    client.id: demo-client
+    group.id: demo-connect
+    offset.storage.topic: demo-connect-offsets
+    config.storage.topic: demo-connect-configs
+    status.storage.topic: demo-connect-status
+    config.storage.replication.factor: 3
+    offset.storage.replication.factor: 3
+    status.storage.replication.factor: 3
+    # enable connectors to read config from secrets
+    config.providers: file
+    config.providers.file.class: org.apache.kafka.common.config.provider.DirectoryConfigProvider
+  tls:
+   trustedCertificates:
+    - secretName: es-cluster-ca-cert
+      certificate: ca.crt
+  authentication:
+    type: scram-sha-512
+    username: kafka-connect-credentials
+    passwordSecret:
+      secretName: kafka-connect-credentials
+      password: password
+  externalConfiguration:
+    volumes:
+      - name: alphavantage
+        secret:
+          secretName: alphavantage
+      - name: twitter
+        secret:
+          secretName: twitter
+      - name: datagen-avro-schemas
+        configMap:
+          name: datagen-avro-schemas

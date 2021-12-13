@@ -1,0 +1,46 @@
+#
+# Creates an instance of the Cloud Pak for Integration
+#  Platform Navigator
+#
+# Installs the Operator first if it's not already
+#  available. It is installed in an All-Namespaces
+#  mode, to allow the Platform Navigator to
+#  manage CP4I capabilities in any namespace.
+#
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: install-platform-navigator-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  params:
+    # details of the operator to install
+    - name: operator-name
+      value: "ibm-integration-platform-navigator"
+    - name: operator-pod-label
+      value: "app.kubernetes.io/instance=ibm-integration-platform-navigator-operator"
+    - name: operator-namespace
+      value: "openshift-operators"
+    # what we're creating
+    - name: instance-type
+      value: "platformnavigator"
+    - name: instance-name
+      value: "navigator"
+    # where we're installing
+    - name: deployment-namespace
+      value: "integration"
+  pipelineRef:
+    name: pipeline-cp4i
+  workspaces:
+    - name: pipeline-shared-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi
+  # initial Platform Navigator install can easily take over an hour,
+  #  so this pipeline run needs a very generous timeout
+  timeout: "2h30m0s"

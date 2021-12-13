@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-deployer-ibmcatalog-role
+rules:
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - catalogsources
+    verbs:
+      - get
+      - create
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - get

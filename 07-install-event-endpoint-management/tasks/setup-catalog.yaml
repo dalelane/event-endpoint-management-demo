@@ -1,0 +1,49 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: setup-apic-catalog
+spec:
+  params:
+    - name: instance-name
+      description: the name of the APIC instance to log in to
+    - name: instance-namespace
+      description: the namespace that the APIC instance is in
+    - name: apic-org-name
+      description: name of the APIC provider org to use
+    - name: apic-catalog-name
+      description: name of the APIC catalog to create
+    - name: apic-catalog-title
+      description: title of the APIC catalog to create
+  workspaces:
+    - name: apic-cli
+      description: workspace where the apic CLI is
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "getting jq"
+        curl --output jq --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+        chmod +x jq
+
+        echo "restoring the cli state from the workspace"
+        cp -rf /workspace/apic-cli/apiconnect-config ~/.apiconnect
+
+        echo "getting API manager details"
+        APIM_ENDPOINT=$(kubectl -n $(params.instance-namespace) get mgmt $(params.instance-name)-mgmt -o jsonpath="https://{.status.zenRoute}")
+        ADMIN_USER_URL=$(/workspace/apic-cli/apic users:get --server $APIM_ENDPOINT --org admin --user-registry common-services --format json admin --output - | ./jq -r .url)
+        EEM_ORG_URL=$(/workspace/apic-cli/apic orgs:get --server $APIM_ENDPOINT $(params.apic-org-name) --format json --output - | ./jq -r .url)
+
+        echo "preparing catalog config"
+        cat >catalog.conf <<EOL
+        name: $(params.apic-catalog-name)
+        title: $(params.apic-catalog-title)
+        owner_url: $ADMIN_USER_URL
+        org_url: $EEM_ORG_URL
+        EOL
+        cat catalog.conf
+
+        echo "creating catalog"
+        /workspace/apic-cli/apic catalogs:create --server $APIM_ENDPOINT --org $(params.apic-org-name) catalog.conf
+

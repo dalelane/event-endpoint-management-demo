@@ -1,0 +1,48 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: EventStreams
+metadata:
+  name: es
+spec:
+  version: 10.4.0
+  license:
+    accept: true
+    use: CloudPakForIntegrationNonProduction
+  adminApi: {}
+  adminUI: {}
+  apicurioRegistry:
+    # workaround for rolling restarts observed in ROKS
+    livenessProbe:
+      initialDelaySeconds: 120
+  strimziOverrides:
+    kafka:
+      replicas: 3
+      authorization:
+        type: runas
+      config:
+        inter.broker.protocol.version: '2.8'
+        interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+        log.cleaner.threads: 6
+        log.message.format.version: '2.8'
+        num.io.threads: 24
+        num.network.threads: 9
+        num.replica.fetchers: 3
+        offsets.topic.replication.factor: 3
+      listeners:
+        tls:
+          authentication:
+            type: scram-sha-512
+      storage:
+        type: persistent-claim
+        size: 20Gi
+        class: STORAGECLASS_FROM_OVERRIDES
+    zookeeper:
+      replicas: 3
+      storage:
+        type: persistent-claim
+        size: 3Gi
+        class: STORAGECLASS_FROM_OVERRIDES
+    entityOperator:
+      topicOperator: {}
+  requestIbmServices:
+    iam: true
+    monitoring: true

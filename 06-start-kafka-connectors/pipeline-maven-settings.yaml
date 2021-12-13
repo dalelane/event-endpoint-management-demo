@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipeline-maven-settings
+data:
+  settings.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <settings>
+      <mirrors>
+        <mirror>
+          <id>confluent (https)</id>
+          <name>https mirror</name>
+          <url>https://packages.confluent.io/maven/</url>
+          <mirrorOf>confluent</mirrorOf>
+        </mirror>
+      </mirrors>
+    </settings>

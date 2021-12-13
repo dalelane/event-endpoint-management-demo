@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: generate-asyncapi
+spec:
+  params:
+    - name: es-name
+      description: name of the Event Streams instance hosting the topics
+    - name: es-namespace
+      description: namespace where the Event Streams cluster is running
+    - name: kafka-username
+      description: username for accessing the Kafka topic, to use when configuring the Event Gateway
+    - name: input-doc-template
+      description: name of the template file to use for generating documentation with
+    - name: output-doc-filename
+      description: name of the file to generate the documentation in
+  workspaces:
+    - name: output
+      description: workspace to write the apic CLI to
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "getting yq"
+        curl --output yq --location https://github.com/mikefarah/yq/releases/download/v4.14.1/yq_linux_amd64
+        chmod +x yq
+
+        echo "generating API doc"
+        KAFKA_USERNAME=$(params.kafka-username) \
+        KAFKA_PASSWORD=$(kubectl get secret -n $(params.es-namespace) $(params.kafka-username) -ojsonpath='{.data.password}' | base64 -d) \
+        BOOTSTRAP_SERVER=$(kubectl get eventstreams $(params.es-name) -n $(params.es-namespace) -ojsonpath='{.status.kafkaListeners[?(@.type=="tls")].bootstrapServers}') \
+        EVENTSTREAM_CERTIFICATE="$(kubectl get eventstreams $(params.es-name) -n $(params.es-namespace) -ojsonpath='{..kafkaListeners[0].certificates[0]}')" \
+            ./yq eval --output-format=yaml -P \
+                "(.x-ibm-configuration.assembly.execute[0].invoke-kafka.username = env(KAFKA_USERNAME)) |
+                (.x-ibm-configuration.assembly.execute[0].invoke-kafka.password = env(KAFKA_PASSWORD)) |
+                (.x-ibm-configuration.properties.bootstrapServerAddress.value = env(BOOTSTRAP_SERVER)) |
+                (.x-ibm-configuration.assembly.execute[0].invoke-kafka.\"transport.cacert\" = strenv(EVENTSTREAM_CERTIFICATE))" \
+                "/workspace/output/08-publish-topics-to-eem/resources/api-specs/$(params.input-doc-template)" \
+                > "/workspace/output/08-publish-topics-to-eem/resources/api-specs/$(params.output-doc-filename)"
+
+        echo "generated documentation in $(params.output-doc-filename)"
+        cat /workspace/output/08-publish-topics-to-eem/resources/api-specs/$(params.output-doc-filename)

@@ -1,0 +1,37 @@
+product: 1.0.0
+
+info:
+  title: Demo events
+  name: demo-events
+  version: 1.0.0
+  summary: Demo events from various sources
+  contact:
+    name: Dale Lane
+    email: dale.lane@uk.ibm.com
+
+apis:
+  techcompanies1.0.0:
+    $ref: techcompanies_1.0.0.yaml
+  flights1.0.0:
+    $ref: flights_1.0.0.yaml
+  twitter1.0.0:
+    $ref: twitter_1.0.0.yaml
+  random1.0.0:
+    $ref: random_1.0.0.yaml
+
+gateways:
+  - event-gateway
+
+plans:
+  default-plan:
+    title: Default Plan
+    description: Default Plan
+    approval: false
+
+visibility:
+  view:
+    enabled: true
+    type: public
+  subscribe:
+    enabled: true
+    type: authenticated

@@ -1,0 +1,42 @@
+#
+# Prepares an instance of Event Endpoint Management
+#  for use.
+#
+# This only configures an existing instance, so is
+#  dependent on the install pipeline first being
+#  run to create the instance.
+#
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: setup-event-endpoint-management-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  params:
+    # the instance we're setting up
+    - name: instance-type
+      value: "eventendpointmanager"
+    - name: instance-name
+      value: "eem"
+    # what we're creating in the instance
+    - name: apic-org-name
+      value: "events-demo"
+    - name: apic-catalog-name
+      value: "events-catalog"
+    - name: apic-catalog-title
+      value: "Events Demo"
+    # where we're installing
+    - name: deployment-namespace
+      value: "eventendpointmanagement"
+  pipelineRef:
+    name: pipeline-event-endpoint-management
+  workspaces:
+    - name: apic-cli-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

@@ -1,0 +1,21 @@
+# applies the provided yaml/json file to create a k8s resource
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-resource
+spec:
+  params:
+    - name: resource-yaml
+      description: location of a file containing the resource to create
+    - name: namespace
+      description: namespace to create the resource in
+  workspaces:
+    - name: source
+      description: contents of source code repository
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+        cd source
+        kubectl apply -n $(params.namespace) -f $(params.resource-yaml)

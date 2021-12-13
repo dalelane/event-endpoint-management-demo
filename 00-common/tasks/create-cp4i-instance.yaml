@@ -1,0 +1,31 @@
+# applies the provided yaml/json file to create a k8s resource
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-cp4i-instance
+spec:
+  params:
+    - name: instance-type
+      description: type of operand to create (e.g. 'ibm-eventstreams')
+    - name: instance-namespace
+      description: namespace to create the resource in
+  workspaces:
+    - name: source
+      description: contents of source code repository
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+        cd source
+
+        echo "identifying template to use"
+        INSTANCE_TEMPLATE="./00-common/resources/operands/$(params.instance-type).yaml"
+        cat $INSTANCE_TEMPLATE
+
+        echo "applying overrides"
+        sed -i s/STORAGECLASS_FROM_OVERRIDES/$(kubectl get configmap cp4i-overrides -npipeline-eventdrivendemo -ojsonpath="{.data.$(params.instance-type)-storageClassName}")/g $INSTANCE_TEMPLATE
+
+        echo "creating instance"
+        cat $INSTANCE_TEMPLATE
+        kubectl apply -n $(params.instance-namespace) -f $INSTANCE_TEMPLATE

@@ -1,0 +1,41 @@
+#
+# Creates an instance of the Cloud Pak for Integration
+#  Event Streams cluster
+#
+# Installs the Operator first if it's not already
+#  available.
+#
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: install-event-streams-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  params:
+    # details of the operator to install
+    - name: operator-name
+      value: "ibm-eventstreams"
+    - name: operator-pod-label
+      value: "app.kubernetes.io/instance=eventstreams-operator"
+    - name: operator-namespace
+      value: "eventstreams"
+    # what we're creating
+    - name: instance-type
+      value: "eventstreams"
+    - name: instance-name
+      value: "es"
+    # where we're installing
+    - name: deployment-namespace
+      value: "eventstreams"
+  pipelineRef:
+    name: pipeline-cp4i
+  workspaces:
+    - name: pipeline-shared-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

@@ -1,0 +1,50 @@
+# waits for a pod with a specified label to be
+#  created, and then reach the Running phase
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: wait-for-pod
+spec:
+  params:
+    - name: pod-label
+    - name: pod-namespace
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "Waiting for pod to be created"
+        PODS_COUNT="0"
+        while [ "$PODS_COUNT" = "0" ]
+        do
+          PODS_COUNT=`kubectl get pods -l "$(params.pod-label)" -n $(params.pod-namespace) --no-headers | wc -l | tr -d ' '`
+          echo "number of pods: $PODS_COUNT"
+          sleep 3
+        done
+
+        if [ "$PODS_COUNT" != "1" ]; then
+          # for now, we're only using this for pods
+          #  where we expect a single instance, but
+          #  this could be extended to support waiting
+          #  for all replicas in a set to reach a
+          #  running phase
+          exit 1
+        fi
+
+
+        echo "Waiting for pod to finish starting"
+        POD_PHASE="Pending"
+        while [ "$POD_PHASE" = "Pending" ]
+        do
+          # doing this instead of using 'kubectl wait' makes
+          #  it easier to respond to error states
+          POD_PHASE=`kubectl get pods -l "$(params.pod-label)" -n $(params.pod-namespace) -ojsonpath='{.items[0].status.phase}'`
+          echo "$POD_PHASE"
+          sleep 30
+        done
+
+        if [ "$POD_PHASE" = "Running" ]; then
+          exit 0
+        fi
+        exit 1

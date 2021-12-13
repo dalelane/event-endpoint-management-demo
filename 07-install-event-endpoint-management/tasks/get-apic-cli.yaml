@@ -1,0 +1,73 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: get-apic-cli
+spec:
+  params:
+    - name: instance-name
+      description: the name of the APIC instance to get the cli from
+    - name: instance-namespace
+      description: the namespace that the APIC instance is in
+  workspaces:
+    - name: apic-cli
+      description: workspace to write the apic CLI to
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "identifying pod to download apic CLI from"
+        APIC_POD_NAME=$(kubectl get pods -n "$(params.instance-namespace)" \
+                          -l app.kubernetes.io/name=client-downloads-server,app.kubernetes.io/part-of="$(params.instance-name)" \
+                          -o=jsonpath='{.items[0].metadata.name}')
+
+        # copy the CLI zip from the pod
+        #  (in theory this should be sufficient, but in practice this fails more
+        #   often than it succeeds because the CLI zip is too large for kubectl cp
+        #   to reliably transfer)
+        # kubectl cp -n $(params.instance-namespace) $APIC_POD_NAME:dist/toolkit-linux.tgz toolkit-linux.tgz
+
+        # split the zip into smaller pieces to work around kubectl cp problems
+        echo "splitting CLI zip into smaller pieces for transfer"
+        kubectl exec -n $(params.instance-namespace) $APIC_POD_NAME -- bash -c "cd /tmp && \
+          rm -f toolkit-linux.tgz && \
+          rm -f partial-toolkit-linux-tgz* && \
+          cp ~/dist/toolkit-linux.tgz /tmp/. && \
+          split ./toolkit-linux.tgz -b 1m partial-toolkit-linux-tgz. && \
+          ls -l /tmp"
+
+        # download each of the pieces and recombine them
+        echo "downloading and recombining CLI"
+        rm -f toolkit-linux.tgz
+        touch toolkit-linux.tgz
+        for part in partial-toolkit-linux-tgz.aa partial-toolkit-linux-tgz.ab partial-toolkit-linux-tgz.ac partial-toolkit-linux-tgz.ad partial-toolkit-linux-tgz.ae partial-toolkit-linux-tgz.af partial-toolkit-linux-tgz.ag partial-toolkit-linux-tgz.ah partial-toolkit-linux-tgz.ai partial-toolkit-linux-tgz.aj partial-toolkit-linux-tgz.ak partial-toolkit-linux-tgz.al partial-toolkit-linux-tgz.am partial-toolkit-linux-tgz.an
+        do
+          kubectl cp -n $(params.instance-namespace) $APIC_POD_NAME:/tmp/$part $part
+          while [ $? -ne 0 ]; do
+              kubectl cp -n $(params.instance-namespace) $APIC_POD_NAME:/tmp/$part $part
+          done
+          cat $part >> toolkit-linux.tgz
+          rm $part
+        done
+
+        # unzip the CLI
+        echo "unzipping apic CLI"
+        tar xvfz toolkit-linux.tgz
+
+        # get the CLI ready to run
+        echo "preparing the CLI to run"
+        mv apic-slim /workspace/apic-cli/apic
+        chmod +x /workspace/apic-cli/apic
+
+        # accept license for using the apic CLI
+        echo "accepting license"
+        yes | /workspace/apic-cli/apic --accept-license
+
+        # store the cli state in the workspace
+        echo "storing the CLI state in the workspace"
+        mv ~/.apiconnect /workspace/apic-cli/apiconnect-config
+
+        # verify
+        echo "/workspace/apic-cli contents:"
+        ls -l /workspace/apic-cli

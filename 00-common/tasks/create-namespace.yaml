@@ -1,0 +1,15 @@
+# create the requested namespace if it doesn't already exist
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-namespace
+spec:
+  params:
+    - name: namespace
+      description: namespace to create
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+        kubectl create namespace $(params.namespace) --dry-run=client -o yaml | kubectl apply -f -

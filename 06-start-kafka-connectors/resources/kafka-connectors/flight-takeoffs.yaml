@@ -1,0 +1,25 @@
+apiVersion: eventstreams.ibm.com/v1alpha1
+kind: KafkaConnector
+metadata:
+  name: flight-takeoffs
+  namespace: eventstreams
+  labels:
+    eventstreams.ibm.com/cluster: eem-demo-connectors
+spec:
+  class: "io.confluent.kafka.connect.datagen.DatagenConnector"
+  tasksMax: 1
+  config:
+    #
+    topic: FLIGHT.TAKEOFFS
+    kafka.topic: FLIGHT.TAKEOFFS
+    #
+    schema.filename: /opt/kafka/external-configuration/datagen-avro-schemas/flighttakeoffs.avsc
+    schema.keyfield: eventid
+    #
+    max.interval: 6000
+    #
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    key.converter.schemas.enable: false
+    #
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter.schemas.enable: false

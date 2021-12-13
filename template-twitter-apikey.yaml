@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: twitter
+  namespace: pipeline-credentials
+type: Opaque
+stringData:
+  accessToken: token-from-twitter
+  accessTokenSecret: secret-from-twitter
+  consumerKey: key-from-twitter
+  consumerKeySecret: secret-from-twitter

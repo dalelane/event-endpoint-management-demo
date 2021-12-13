@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cp4i-overrides
+  namespace: pipeline-eventdrivendemo
+type: kubernetes.io/basic-auth
+data:
+  ibm-common-service-operator-storageClassName: ibmc-file-gold-gid
+  ibm-integration-platform-navigator-storageClassName: ibmc-file-gold-gid
+  ibm-eventstreams-storageClassName: ibmc-file-gold-gid
+  ibm-apiconnect-storageClassName: ibmc-block-gold

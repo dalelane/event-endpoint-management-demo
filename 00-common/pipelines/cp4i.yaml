@@ -1,0 +1,168 @@
+#
+# General pipeline for creating instances of capabilities
+#  from Cloud Pak for Integration
+#
+# It will:
+#   - install the Operator responsible for that capability
+#   - wait for the install to complete
+#   - create an instance/operand
+#   - wait for the deployment to complete
+#
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-cp4i
+spec:
+  workspaces:
+    - name: pipeline-shared-workspace
+
+  params:
+    # attributes for the operator to install
+    - name: operator-name
+      type: string
+      description: name of the operator to install (e.g. 'ibm-eventstreams')
+    - name: operator-pod-label
+      type: string
+      description: label to use to identify the operator pod
+    - name: operator-namespace
+      type: string
+      description: namespace to deploy the operator to
+    # attributes for the instance to create
+    - name: instance-name
+      type: string
+      description: name of the instance to create (once the operator is ready)
+    - name: instance-type
+      type: string
+      description: type of instance to create (once the operator is ready)
+    - name: deployment-namespace
+      type: string
+      description: namespace to create the instance in
+
+  tasks:
+    # in case this is a brand new deployment, we play it
+    #  safe and make sure that the namespace exists before
+    #  doing anything else
+    - name: check-namespace-exists
+      taskRef:
+        name: create-namespace
+      params:
+        - name: namespace
+          value: "$(params.deployment-namespace)"
+
+    # clones this repo, which contains the definitions
+    #  for the resources to create
+    - name: clone-source-code
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      params:
+        - name: url
+          value: "https://github.com/dalelane/event-endpoint-management-demo"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-workspace
+
+    # install the operator that will manage
+    #  the capability being created
+    - name: install-operator
+      taskRef:
+        name: install-operator
+      params:
+        - name: operator-name
+          value: "$(params.operator-name)"
+        - name: namespace
+          value: "$(params.operator-namespace)"
+      runAfter:
+        # namespace needs to exist to install into it
+        - check-namespace-exists
+        # source code contains the operator install spec
+        - clone-source-code
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+    # wait for the operator install to finish
+    #
+    #  (for the first CP4I install, this can be a
+    #   long time, as this will include installing
+    #   Common Services dependencies)
+    - name: wait-for-operator-install
+      taskRef:
+        name: wait-for-operator
+      params:
+        - name: operator-name
+          value: "$(params.operator-name)"
+        - name: namespace
+          value: "$(params.operator-namespace)"
+      runAfter:
+        - install-operator
+
+    # wait for the operator pod to finish starting
+    #  some of these can take a long time to start
+    #  because of long-lived init containers
+    - name: wait-for-operator-pod
+      taskRef:
+        name: wait-for-pod
+      params:
+        - name: pod-label
+          value: "$(params.operator-pod-label)"
+        - name: pod-namespace
+          value: "$(params.operator-namespace)"
+      runAfter:
+        - wait-for-operator-install
+
+    # a valid entitlement key is needed before an
+    #  instance can be created, as it is used to
+    #  pull docker images for operands (not needed
+    #  for operator docker images)
+    - name: get-entitlement-key
+      taskRef:
+        name: copy-secret
+      runAfter:
+        # need the namespace to exist to copy the secret to it
+        - check-namespace-exists
+      params:
+        - name: source-secret-name
+          value: ibm-entitlement-key
+        - name: source-namespace
+          value: pipeline-credentials
+        - name: target-secret-name
+          value: ibm-entitlement-key
+        - name: target-namespace
+          value: "$(params.deployment-namespace)"
+
+    # create an instance that will be managed by the
+    #  operator that should be ready by now
+    - name: create-instance
+      taskRef:
+        name: create-cp4i-instance
+      params:
+        - name: instance-type
+          value: "$(params.operator-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+      runAfter:
+        # git repo contains the spec that will be created
+        - clone-source-code
+        # a secret is required for pulling instance docker images
+        - get-entitlement-key
+        # the operator needs to be ready first
+        - wait-for-operator-install
+        - wait-for-operator-pod
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+    # wait for the instance to finish starting up
+    - name: wait-for-instance
+      taskRef:
+        name: wait-for-cp4i-operand
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-type
+          value: "$(params.instance-type)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+      runAfter:
+        - create-instance

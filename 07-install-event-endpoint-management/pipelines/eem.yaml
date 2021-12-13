@@ -1,0 +1,189 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-event-endpoint-management
+spec:
+  workspaces:
+    - name: apic-cli-workspace
+
+  params:
+    - name: deployment-namespace
+      type: string
+      description: namespace where the instance being set up is running
+    - name: instance-name
+      type: string
+      description: name of the instance being set up
+    - name: instance-type
+      type: string
+      description: type of instance being setup
+    - name: apic-org-name
+      type: string
+      description: name of the APIC provider org to use
+    - name: apic-catalog-name
+      type: string
+      description: name of the APIC catalog to create
+    - name: apic-catalog-title
+      type: string
+      description: title of the APIC catalog to create
+
+
+  tasks:
+    # wait for the instance to be ready before
+    #   trying to set it up
+    - name: wait-for-instance
+      taskRef:
+        name: wait-for-cp4i-operand
+      params:
+        - name: instance-type
+          value: "$(params.instance-type)"
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+
+    # download the apic CLI needed for the rest of the setup
+    - name: get-apic-cli
+      taskRef:
+        name: get-apic-cli
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        # CLI is downloaded from the instance pod, so
+        #  this can't be done until it is ready
+        - wait-for-instance
+
+    # login to the API cloud manager
+    - name: apic-login
+      taskRef:
+        name: apic-cli-login
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        - get-apic-cli
+
+    # setup the API cloud admin user
+    - name: setup-admin-user
+      taskRef:
+        name: setup-apic-admin-user
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        # task depends on files put in the
+        #  workspace by the apic-login task
+        - apic-login
+
+    # create the API provider organisation
+    - name: setup-org
+      taskRef:
+        name: setup-apic-provider-org
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+        - name: apic-org-name
+          value: "$(params.apic-org-name)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        # task depends on files put in the
+        #  workspace by the apic-login task
+        - apic-login
+        # admin user needs to have an email
+        #  address before an org can be created
+        - setup-admin-user
+
+    # create the demo catalog
+    - name: setup-catalog
+      taskRef:
+        name: setup-apic-catalog
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+        - name: apic-org-name
+          value: "$(params.apic-org-name)"
+        - name: apic-catalog-name
+          value: "$(params.apic-catalog-name)"
+        - name: apic-catalog-title
+          value: "$(params.apic-catalog-title)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        # task depends on files put in the
+        #  workspace by the apic-login task
+        - apic-login
+        # catalog is created in an org, so the
+        #  org needs to be set up first
+        - setup-org
+
+    # register the developer portal
+    - name: setup-portal
+      taskRef:
+        name: setup-apic-portal
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+        - name: apic-org-name
+          value: "$(params.apic-org-name)"
+        - name: apic-catalog-name
+          value: "$(params.apic-catalog-name)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        # task depends on files put in the
+        #  workspace by the apic-login task
+        - apic-login
+        # portal is created in a catalog, so
+        #  the catalog needs to be setup first
+        - setup-catalog
+
+    # create a demo user for accessing the developer portal
+    - name: create-portal-user
+      taskRef:
+        name: setup-apic-portal-user
+      params:
+        - name: instance-name
+          value: "$(params.instance-name)"
+        - name: instance-namespace
+          value: "$(params.deployment-namespace)"
+        - name: apic-org-name
+          value: "$(params.apic-org-name)"
+        - name: apic-catalog-name
+          value: "$(params.apic-catalog-name)"
+        - name: portal-username
+          value: "demouser"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        # task depends on files put in the
+        #  workspace by the apic-login task
+        - apic-login
+        # wait until portal registration is
+        #  complete before adding the new user and org
+        - setup-portal

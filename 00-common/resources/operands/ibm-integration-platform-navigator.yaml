@@ -1,0 +1,13 @@
+apiVersion: integration.ibm.com/v1beta1
+kind: PlatformNavigator
+metadata:
+  name: navigator
+spec:
+  license:
+    accept: true
+    license: L-RJON-C5CSNH
+  mqDashboard: true
+  replicas: 1
+  storage:
+    class: STORAGECLASS_FROM_OVERRIDES
+  version: 2021.3.1

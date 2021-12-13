@@ -1,0 +1,313 @@
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-asyncapi
+spec:
+  workspaces:
+    - name: pipeline-shared-workspace
+    - name: apic-cli-workspace
+
+  params:
+    # Event Streams cluster where the topics are hosted
+    - name: es-instance-name
+      type: string
+      description: name of the Event Streams instance that is hosting the kafka topics to be shared in EEM
+    - name: es-namespace
+      type: string
+      description: namespace where Event Streams is running
+    # Event Endpoint Management instance where the topics will be shared
+    - name: eem-instance-name
+      type: string
+      description: name of the Event Endpoint Management instance that will manage access to the Kafka topics
+    - name: eem-namespace
+      type: string
+      description: namespace where Event Endpoint Management is running
+
+  tasks:
+    # clone the git repo that contains the specifications for
+    #  the connectors to be created
+    - name: clone-source-code
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      params:
+        - name: url
+          value: "https://github.com/dalelane/event-endpoint-management-demo"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-workspace
+
+    # check that we have a working schema registry
+    #  before trying to retrieve schemas from it
+    - name: check-eventstreams-ready
+      taskRef:
+        name: wait-for-cp4i-operand
+      params:
+        - name: instance-type
+          value: "eventstreams"
+        - name: instance-name
+          value: "$(params.es-instance-name)"
+        - name: instance-namespace
+          value: "$(params.es-namespace)"
+
+    # check that we have a working schema registry
+    #  before trying to retrieve schemas from it
+    - name: check-eem-ready
+      taskRef:
+        name: wait-for-cp4i-operand
+      params:
+        - name: instance-type
+          value: "eventendpointmanager"
+        - name: instance-name
+          value: "$(params.eem-instance-name)"
+        - name: instance-namespace
+          value: "$(params.eem-namespace)"
+
+
+    # create Kafka credentials that can be used to
+    #  configure the Event Gateway
+
+    - name: create-gateway-kafka-credentials-stockprices
+      taskRef:
+        name: create-kafka-credentials
+      params:
+        - name: credentials-username
+          value: "gateway-credentials-stockprices"
+        - name: credentials-spec
+          value: "08-publish-topics-to-eem/resources/gateway-kafka-credentials/kafkauser-stockprices.yaml"
+        - name: namespace
+          value: "$(params.es-namespace)"
+      runAfter:
+        # need a working Event Streams to create credentials
+        - check-eventstreams-ready
+        # need the git repo which contains the credential ACLs
+        - clone-source-code
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+    - name: create-gateway-kafka-credentials-flights
+      taskRef:
+        name: create-kafka-credentials
+      params:
+        - name: credentials-username
+          value: "gateway-credentials-flights"
+        - name: credentials-spec
+          value: "08-publish-topics-to-eem/resources/gateway-kafka-credentials/kafkauser-flights.yaml"
+        - name: namespace
+          value: "$(params.es-namespace)"
+      runAfter:
+        # need a working Event Streams to create credentials
+        - check-eventstreams-ready
+        # need the git repo which contains the credential ACLs
+        - clone-source-code
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+    - name: create-gateway-kafka-credentials-twitter
+      taskRef:
+        name: create-kafka-credentials
+      params:
+        - name: credentials-username
+          value: "gateway-credentials-twitter"
+        - name: credentials-spec
+          value: "08-publish-topics-to-eem/resources/gateway-kafka-credentials/kafkauser-twitter.yaml"
+        - name: namespace
+          value: "$(params.es-namespace)"
+      runAfter:
+        # need a working Event Streams to create credentials
+        - check-eventstreams-ready
+        # need the git repo which contains the credential ACLs
+        - clone-source-code
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+    - name: create-gateway-kafka-credentials-random
+      taskRef:
+        name: create-kafka-credentials
+      params:
+        - name: credentials-username
+          value: "gateway-credentials-random"
+        - name: credentials-spec
+          value: "08-publish-topics-to-eem/resources/gateway-kafka-credentials/kafkauser-random.yaml"
+        - name: namespace
+          value: "$(params.es-namespace)"
+      runAfter:
+        # need a working Event Streams to create credentials
+        - check-eventstreams-ready
+        # need the git repo which contains the credential ACLs
+        - clone-source-code
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+
+    # generate AsyncAPI documents for each of the topics
+    #  produced to by the change data capture connectors
+
+    - name: generate-stockprices-asyncapi
+      taskRef:
+        name: generate-asyncapi
+      params:
+        - name: es-name
+          value: "$(params.es-instance-name)"
+        - name: es-namespace
+          value: "$(params.es-namespace)"
+        - name: kafka-username
+          value: "gateway-credentials-stockprices"
+        - name: input-doc-template
+          value: "template-techcompanies_1.0.0.yaml"
+        - name: output-doc-filename
+          value: "techcompanies_1.0.0.yaml"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-workspace
+      runAfter:
+        # need to wait until the schema registry is ready
+        #  to be able to fetch schemas from it
+        - check-eventstreams-ready
+        # need the templates in git to generate docs
+        - clone-source-code
+        # need the kafka usernames to be ready to use
+        - create-gateway-kafka-credentials-stockprices
+
+    - name: generate-flights-asyncapi
+      taskRef:
+        name: generate-asyncapi
+      params:
+        - name: es-name
+          value: "$(params.es-instance-name)"
+        - name: es-namespace
+          value: "$(params.es-namespace)"
+        - name: kafka-username
+          value: "gateway-credentials-flights"
+        - name: input-doc-template
+          value: "template-flights_1.0.0.yaml"
+        - name: output-doc-filename
+          value: "flights_1.0.0.yaml"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-workspace
+      runAfter:
+        # need to wait until the schema registry is ready
+        #  to be able to fetch schemas from it
+        - check-eventstreams-ready
+        # need the templates in git to generate docs
+        - clone-source-code
+        # need the kafka usernames to be ready to use
+        - create-gateway-kafka-credentials-flights
+
+    - name: generate-twitter-asyncapi
+      taskRef:
+        name: generate-asyncapi
+      params:
+        - name: es-name
+          value: "$(params.es-instance-name)"
+        - name: es-namespace
+          value: "$(params.es-namespace)"
+        - name: kafka-username
+          value: "gateway-credentials-twitter"
+        - name: input-doc-template
+          value: "template-twitter_1.0.0.yaml"
+        - name: output-doc-filename
+          value: "twitter_1.0.0.yaml"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-workspace
+      runAfter:
+        # need to wait until the schema registry is ready
+        #  to be able to fetch schemas from it
+        - check-eventstreams-ready
+        # need the templates in git to generate docs
+        - clone-source-code
+        # need the kafka usernames to be ready to use
+        - create-gateway-kafka-credentials-twitter
+
+    - name: generate-random-asyncapi
+      taskRef:
+        name: generate-asyncapi
+      params:
+        - name: es-name
+          value: "$(params.es-instance-name)"
+        - name: es-namespace
+          value: "$(params.es-namespace)"
+        - name: kafka-username
+          value: "gateway-credentials-random"
+        - name: input-doc-template
+          value: "template-random_1.0.0.yaml"
+        - name: output-doc-filename
+          value: "random_1.0.0.yaml"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-workspace
+      runAfter:
+        # need to wait until the schema registry is ready
+        #  to be able to fetch schemas from it
+        - check-eventstreams-ready
+        # need the templates in git to generate docs
+        - clone-source-code
+        # need the kafka usernames to be ready to use
+        - create-gateway-kafka-credentials-random
+
+
+    # download the apic CLI needed to publish asyncapis
+    - name: get-apic-cli
+      taskRef:
+        name: get-apic-cli
+      params:
+        - name: instance-name
+          value: "$(params.eem-instance-name)"
+        - name: instance-namespace
+          value: "$(params.eem-namespace)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        # CLI is downloaded from EEM, so
+        #  this can't be done until it is ready
+        - check-eem-ready
+
+    # login to the API cloud manager
+    - name: apic-login
+      taskRef:
+        name: apic-cli-login
+      params:
+        - name: instance-name
+          value: "$(params.eem-instance-name)"
+        - name: instance-namespace
+          value: "$(params.eem-namespace)"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+      runAfter:
+        - get-apic-cli
+
+    # publish generated AsyncAPI docs to the API manager
+    - name: asyncapi-publish
+      taskRef:
+        name: apic-stockprices-asyncapi-publish
+      params:
+        - name: instance-name
+          value: "$(params.eem-instance-name)"
+        - name: instance-namespace
+          value: "$(params.eem-namespace)"
+        - name: apic-org-name
+          value: "events-demo"
+        - name: apic-catalog-name
+          value: "events-catalog"
+        - name: product-spec
+          value: "product-demo-events.yaml"
+      workspaces:
+        - name: apic-cli
+          workspace: apic-cli-workspace
+        - name: output
+          workspace: pipeline-shared-workspace
+      runAfter:
+        - apic-login
+        - generate-stockprices-asyncapi
+        - generate-flights-asyncapi
+        - generate-twitter-asyncapi
+        - generate-random-asyncapi

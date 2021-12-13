@@ -1,0 +1,65 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: apic-stockprices-asyncapi-publish
+spec:
+  params:
+    - name: instance-name
+      description: the name of the APIC instance to log in to
+    - name: instance-namespace
+      description: the namespace that the APIC instance is in
+    - name: apic-org-name
+      description: name of the APIC provider org to use
+    - name: apic-catalog-name
+      description: name of the APIC catalog to create
+    - name: product-spec
+      description: file name of the product spec to publish
+  workspaces:
+    - name: apic-cli
+      description: workspace where the apic CLI is
+    - name: output
+      description: workspace where the resources to publish are
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "getting jq"
+        curl --output jq --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+        chmod +x jq
+
+        echo "restoring the cli state from the workspace"
+        cp -rf /workspace/apic-cli/apiconnect-config ~/.apiconnect
+
+        echo "getting API manager server address"
+        APIM_ENDPOINT=$(kubectl -n $(params.instance-namespace) get mgmt $(params.instance-name)-mgmt -o jsonpath="https://{.status.zenRoute}")
+
+        echo "checking that the generated API definitions are valid"
+        /workspace/apic-cli/apic validate "/workspace/output/08-publish-topics-to-eem/resources/api-specs/$(params.product-spec)"
+
+        echo "creating an API product for the topic"
+        /workspace/apic-cli/apic draft-products:create \
+          --server $APIM_ENDPOINT \
+          --org $(params.apic-org-name) \
+          "/workspace/output/08-publish-topics-to-eem/resources/api-specs/$(params.product-spec)" \
+          --format json \
+          --output - > "/workspace/output/08-publish-topics-to-eem/resources/api-specs/draft-product-output.json"
+        cat "/workspace/output/08-publish-topics-to-eem/resources/api-specs/draft-product-output.json"
+
+        echo "preparing product for publishing"
+        PRODUCT_URL=$(./jq -r .url "/workspace/output/08-publish-topics-to-eem/resources/api-specs/draft-product-output.json")
+        cat >product.conf <<EOL
+        draft_product_url: $PRODUCT_URL
+        EOL
+        cat product.conf
+
+        echo "publishing API product"
+        /workspace/apic-cli/apic draft-products:publish \
+          --server $APIM_ENDPOINT \
+          --org $(params.apic-org-name) \
+          --catalog $(params.apic-catalog-name) \
+          product.conf
+
+        echo "cleaning up"
+        rm "/workspace/output/08-publish-topics-to-eem/resources/api-specs/draft-product-output.json"

@@ -1,0 +1,148 @@
+asyncapi: 2.1.0
+
+info:
+  version: 0.0.1
+  title: Flight events
+  x-ibm-name: flights
+  x-ibm-summary: Events emitted when flights take off and land
+  description: >+
+    Events emitted when an Acme flight lands. Events include basic information
+    about the flight.
+
+    _These events are synthetic, generated using kafka-connect-datagen to provide a mock source of events._
+  license:
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+    name: Apache 2.0
+  termsOfService: 'https://acme-travel.com/tos.html'
+  contact:
+    name: Dale Lane
+    url: 'https://acme-travel.com/flights/contacts'
+    email: dale.lane@uk.ibm.com
+
+channels:
+  FLIGHT.LANDINGS:
+    subscribe:
+      message:
+        name: landingEvent
+        title: Flight landing event
+        summary: Flight landing information
+        description: >-
+          This API provides a stream of events based on the landing of planes at
+          Acme airport. Each time an airplane lands, an event will be emitted
+          with the details of the flight.
+        schemaFormat: application/vnd.aai.asyncapi;version=2.0.0
+        contentType: application/json
+        payload:
+          type: object
+          required:
+            - eventid
+            - flight
+            - terminal
+            - passengers
+          properties:
+            eventid:
+              description: unique id for the landing event
+              type: string
+              pattern: '^[0-9A-F]{12}$'
+            flight:
+              description: ID for the flight that has landed
+              type: string
+              pattern: '^AC[1-9]{2,3}$'
+            terminal:
+              description: which terminal the flight has landed at
+              type: string
+              enum:
+                - '1'
+                - '2'
+                - '3'
+                - '4'
+                - '5'
+            passengers:
+              description: Number of passengers on the flight
+              type: integer
+          additionalProperties: false
+        examples:
+          - payload: >
+              {"event": "41FCE954A83C", "flight": "AC300", "terminal": "2", "passengers": 88}
+
+  FLIGHT.TAKEOFFS:
+    subscribe:
+      message:
+        name: takeoffEvent
+        title: Flight takeoff event
+        summary: Flight takeoff information
+        description: >-
+          This API provides a stream of events based on the takeoffs of planes
+          at Acme airport. Each time an airplane takes off, an event will be
+          emitted with the details of the flight.
+        schemaFormat: application/vnd.aai.asyncapi;version=2.0.0
+        contentType: application/json
+        payload:
+          type: object
+          required:
+            - eventid
+            - flight
+            - terminal
+            - passengers
+          properties:
+            eventid:
+              description: unique id for the takeoff event
+              type: string
+              pattern: '^[0-9A-F]{12}$'
+            flight:
+              description: ID for the flight that has taken off
+              type: string
+              pattern: '^AC[1-9]{2,3}$'
+            terminal:
+              description: which terminal the flight took off from
+              type: string
+              enum:
+                - '1'
+                - '2'
+                - '3'
+                - '4'
+                - '5'
+            passengers:
+              description: Number of passengers on the flight
+              type: integer
+          additionalProperties: false
+        examples:
+          - payload: >
+              {"event": "41FCE954A83C", "flight": "AC300", "terminal": "2", "passengers": 88}
+
+servers:
+  cluster:
+    url: $(bootstrapServerAddress)
+    protocol: kafka-secure
+    security:
+      - X-IBM-Client-Id: []
+
+components:
+  securitySchemes:
+    X-IBM-Client-Id:
+      type: plain
+      description: The credential provided should be in SASL-PLAIN format
+
+x-ibm-configuration:
+  enforced: true
+  phase: realized
+  gateway: event-gateway
+  assembly:
+    execute:
+      - invoke-kafka:
+          title: invoke-kafka
+          version: 1.0.0
+          bootstrap.servers: $(bootstrapServerAddress)
+          sasl.mechanism: SCRAM-SHA-512
+          security.protocol: SASL_SSL
+          username: "<< PLACEHOLDER >>"
+          password: "<< PLACEHOLDER >>"
+          transport.cacert: "<< PLACEHOLDER >>"
+          clusterconfigid: 87fad48d-cd5c-45ad-8e89-659b6ed49f30
+  properties:
+    bootstrapServerAddress:
+      value: "<< PLACEHOLDER >>"
+  type: asyncapi
+  testable: false
+  cors:
+    enabled: false

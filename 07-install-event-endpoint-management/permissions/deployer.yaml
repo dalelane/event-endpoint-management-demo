@@ -1,0 +1,92 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-deployer-eventendptmgmt-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - create
+      - patch
+      - get
+      - delete
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - subscriptions
+    verbs:
+      - get
+      - create
+      - patch
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - installplans
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - get
+  - apiGroups:
+      - operators.coreos.com
+    resources:
+      - operatorgroups
+    verbs:
+      - get
+      - create
+      - patch
+  - apiGroups:
+      - eventendpointmanager.apiconnect.ibm.com
+    resources:
+      - eventendpointmanagers
+    verbs:
+      - get
+      - create
+      - patch
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
+  - apiGroups:
+      - zen.cpd.ibm.com
+    resources:
+      - zenservices
+    verbs:
+      - list
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    verbs:
+      - list
+      - get
+  - apiGroups:
+      - management.apiconnect.ibm.com
+    resources:
+      - managementclusters
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+

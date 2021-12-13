@@ -1,0 +1,18 @@
+apiVersion: operator.ibm.com/v3
+kind: CommonService
+metadata:
+  name: common-service
+  namespace: ibm-common-services
+spec:
+  size: starterset
+
+  services:
+  - name: ibm-mongodb-operator
+    spec:
+      mongoDB:
+        # By default, Common Services uses the default storage class
+        #  for mongodb. This will cause install failures for many clusters
+        #  with a default storage class that isn't compatible.
+        # Rather than force users to update their default storage class
+        #  we can explicitly specify the storage class we want here
+        storageClass: STORAGECLASS_FROM_OVERRIDES

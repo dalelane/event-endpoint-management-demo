@@ -1,0 +1,44 @@
+# Waits for an operator install to complete
+#
+#  This includes waiting for the:
+#   - subscription to spawn an install plan
+#   - the install plan to reach the Complete phase
+#
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: wait-for-operator
+spec:
+  params:
+    - name: operator-name
+    - name: namespace
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "Waiting for InstallPlan to be created"
+        INSTALL_PLAN=""
+        while [ -z "$INSTALL_PLAN" ]
+        do
+          INSTALL_PLAN=`kubectl get subscription $(params.operator-name) -n $(params.namespace) -ojsonpath='{.status.installPlanRef.name}'`
+        done
+
+        echo ""
+        kubectl get subscription $(params.operator-name) -n $(params.namespace) -o yaml
+
+        echo "Waiting for install plan to complete"
+        INSTALL_PHASE="Installing"
+        while [ "$INSTALL_PHASE" = "Installing" ]
+        do
+          INSTALL_PHASE=`kubectl get installplan $INSTALL_PLAN -n $(params.namespace) -ojsonpath='{.status.phase}'`
+          echo "$INSTALL_PHASE"
+          sleep 10
+        done
+
+        kubectl get installplan $INSTALL_PLAN -n $(params.namespace) -o yaml
+        if [ "$INSTALL_PHASE" = "Complete" ]; then
+          exit 0
+        fi
+        exit 1

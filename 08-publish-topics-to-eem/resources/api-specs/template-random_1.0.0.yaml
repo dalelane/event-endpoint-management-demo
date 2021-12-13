@@ -1,0 +1,80 @@
+asyncapi: 2.1.0
+
+info:
+  version: 0.0.1
+  title: Random values
+  x-ibm-name: randomvalues
+  x-ibm-summary: Events emitted with random values
+  description: >+
+    Events emitted with randomly generated values.
+
+  license:
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+    name: Apache 2.0
+  contact:
+    name: Dale Lane
+    email: dale.lane@uk.ibm.com
+
+channels:
+  RANDOM.VALUES:
+    subscribe:
+      message:
+        name: randomEvent
+        title: Random values
+        summary: Event with random values
+        description: >-
+          This message contains a random number and a random letter.
+        schemaFormat: application/vnd.aai.asyncapi;version=2.0.0
+        contentType: application/json
+        payload:
+          type: object
+          required:
+            - randomnumber
+            - randomletter
+          properties:
+            randomnumber:
+              type: integer
+            randomletter:
+              type: string
+              pattern: '^[A-Z]$'
+          additionalProperties: false
+        examples:
+          - payload: >
+              {"randomnumber": 101, "randomletter": "F"}
+
+servers:
+  cluster:
+    url: $(bootstrapServerAddress)
+    protocol: kafka-secure
+    security:
+      - X-IBM-Client-Id: []
+
+components:
+  securitySchemes:
+    X-IBM-Client-Id:
+      type: plain
+      description: The credential provided should be in SASL-PLAIN format
+
+x-ibm-configuration:
+  enforced: true
+  phase: realized
+  gateway: event-gateway
+  assembly:
+    execute:
+      - invoke-kafka:
+          title: invoke-kafka
+          version: 1.0.0
+          bootstrap.servers: $(bootstrapServerAddress)
+          sasl.mechanism: SCRAM-SHA-512
+          security.protocol: SASL_SSL
+          username: "<< PLACEHOLDER >>"
+          password: "<< PLACEHOLDER >>"
+          transport.cacert: "<< PLACEHOLDER >>"
+          clusterconfigid: 831c7256-0c56-4a07-8965-06ed97e06a19
+  properties:
+    bootstrapServerAddress:
+      value: "<< PLACEHOLDER >>"
+  type: asyncapi
+  testable: false
+  cors:
+    enabled: false

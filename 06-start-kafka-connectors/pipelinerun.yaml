@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: start-kafka-connectors-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  params:
+    - name: deployment-namespace
+      value: "eventstreams"
+    - name: instance-name
+      value: "es"
+  pipelineRef:
+    name: pipeline-kafkaconnectors
+  workspaces:
+    - name: pipeline-shared-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi
+    - name: maven-settings
+      configMap:
+        name: pipeline-maven-settings

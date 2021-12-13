@@ -1,0 +1,28 @@
+apiVersion: eventstreams.ibm.com/v1alpha1
+kind: KafkaConnector
+metadata:
+  name: twitter-kafka
+  namespace: eventstreams
+  labels:
+    eventstreams.ibm.com/cluster: eem-demo-connectors
+spec:
+  class: "com.github.jcustenborder.kafka.connect.twitter.TwitterSourceConnector"
+  tasksMax: 1
+  config:
+    #
+    kafka.status.topic: TWITTER.KAFKA
+    process.deletes: false
+    filter.keywords: kafka
+    #
+    twitter.oauth.accessToken: ${file:/opt/kafka/external-configuration/twitter:accessToken}
+    twitter.oauth.accessTokenSecret: ${file:/opt/kafka/external-configuration/twitter:accessTokenSecret}
+    twitter.oauth.consumerKey: ${file:/opt/kafka/external-configuration/twitter:consumerKey}
+    twitter.oauth.consumerSecret: ${file:/opt/kafka/external-configuration/twitter:consumerKeySecret}
+    #
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    key.converter.schemas.enable: false
+    #
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter.schemas.enable: false
+    #
+    topic: TWITTER.KAFKA

@@ -1,0 +1,23 @@
+#
+# Adds the IBM Catalog to the Operator Hub marketplace
+#  so that IBM operators are available for installation
+#  through OLM.
+#
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: install-ibm-catalog-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  pipelineRef:
+    name: pipeline-ibmcatalog
+  workspaces:
+    - name: pipeline-shared-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

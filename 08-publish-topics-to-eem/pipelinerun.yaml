@@ -1,0 +1,38 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: publish-topics-to-eem-
+spec:
+  serviceAccountName: pipeline-deployer-serviceaccount
+  params:
+    # Event Streams cluster where the topics are hosted
+    - name: es-instance-name
+      value: "es"
+    - name: es-namespace
+      value: "eventstreams"
+    # Event Endpoint Management instance where the topics will be shared
+    - name: eem-instance-name
+      value: "eem"
+    - name: eem-namespace
+      value: "eventendpointmanagement"
+  pipelineRef:
+    name: pipeline-asyncapi
+  workspaces:
+    - name: pipeline-shared-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi
+    - name: apic-cli-workspace
+      volumeClaimTemplate:
+        spec:
+          storageClassName: ibmc-block-gold
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi

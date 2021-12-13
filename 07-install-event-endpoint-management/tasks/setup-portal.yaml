@@ -1,0 +1,87 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: setup-apic-portal
+spec:
+  params:
+    - name: instance-name
+      description: the name of the APIC instance to log in to
+    - name: instance-namespace
+      description: the namespace that the APIC instance is in
+    - name: apic-org-name
+      description: name of the APIC provider org to use
+    - name: apic-catalog-name
+      description: name of the APIC catalog to create
+  workspaces:
+    - name: apic-cli
+      description: workspace where the apic CLI is
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "getting jq"
+        curl --output jq --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+        chmod +x jq
+
+        echo "restoring the cli state from the workspace"
+        cp -rf /workspace/apic-cli/apiconnect-config ~/.apiconnect
+
+        echo "getting API manager endpoint"
+        APIM_ENDPOINT=$(kubectl -n $(params.instance-namespace) get mgmt $(params.instance-name)-mgmt -o jsonpath="https://{.status.zenRoute}")
+
+        echo "retrieving portal service info"
+        /workspace/apic-cli/apic portal-services:get \
+          --server $APIM_ENDPOINT \
+          --scope org \
+          --org $(params.apic-org-name) \
+          portal-service \
+          --format json --output - > portal.json
+        cat portal.json
+
+        echo "identifying portal attributes from API manager response"
+        PORTAL_TYPE=drupal
+        PORTAL_ENDPOINT="$(./jq -r .web_endpoint_base portal.json)$(params.apic-org-name)/$(params.apic-catalog-name)"
+        SERVICE_VERSION=$(./jq -r .service_version portal.json)
+        PORTAL_SERVICE_URL=$(./jq -r .url portal.json)
+
+        echo "preparing portal config for catalog"
+        cat >portal.conf <<EOL
+        {
+          "portal": {
+            "type": "$PORTAL_TYPE",
+            "endpoint": "$PORTAL_ENDPOINT",
+            "service_version": "$SERVICE_VERSION",
+            "portal_service_url": "$PORTAL_SERVICE_URL"
+          }
+        }
+        EOL
+        cat portal.conf
+
+        echo "starting portal registration"
+        /workspace/apic-cli/apic catalog-settings:update \
+          --server $APIM_ENDPOINT \
+          --org $(params.apic-org-name) \
+          --catalog $(params.apic-catalog-name) \
+          --format json \
+          portal.conf
+
+        echo "waiting for registration to complete"
+        PORTAL_WEBHOOK=$(/workspace/apic-cli/apic catalog-settings:get \
+            --server $APIM_ENDPOINT \
+            --org $(params.apic-org-name) \
+            --catalog $(params.apic-catalog-name) \
+            --format json --output - | ./jq -r .portal.webhook_url)
+        while [ "${PORTAL_WEBHOOK}" = "null" ]
+        do
+          echo "registration in progress..."
+          sleep 20
+          PORTAL_WEBHOOK=$(/workspace/apic-cli/apic catalog-settings:get \
+              --server $APIM_ENDPOINT \
+              --org $(params.apic-org-name) \
+              --catalog $(params.apic-catalog-name) \
+              --format json --output - | ./jq -r .portal.webhook_url)
+        done
+
+        echo "Portal registration complete"

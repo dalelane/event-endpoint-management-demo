@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: install-operator
+spec:
+  params:
+    - name: operator-name
+    - name: namespace
+  workspaces:
+    - name: source
+      description: contents of source code repository
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+        cd source
+
+        # get jq - needed to customize the operator group
+        echo "downloading jq"
+        curl --output jq --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+        chmod +x jq
+
+        # create single-namespace operator group
+        #  (except for all-namespace installs which will use the built-in "global-operators" group)
+        if [ $(params.namespace) == "openshift-operators" ]; then
+          echo "installing into all namespaces - no new operator group needed"
+        else
+          echo "creating operator group"
+          cat ./00-common/resources/operatorgroups/$(params.operator-name).json \
+            | ./jq '.spec.targetNamespaces += ["$(params.namespace)"]' \
+            | kubectl apply -n $(params.namespace) -f -
+        fi
+
+        # create operator subscription
+        echo "creating subscription"
+        kubectl apply -n $(params.namespace) -f ./00-common/resources/operators/$(params.operator-name).yaml
+
+        # verify
+        echo ""
+        kubectl get subscription -n $(params.namespace) $(params.operator-name) -o yaml

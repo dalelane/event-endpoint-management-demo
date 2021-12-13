@@ -1,0 +1,66 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipeline-deployer-stockpricesasyncapi-role
+rules:
+  - apiGroups:
+      - eventstreams.ibm.com
+    resources:
+      - eventstreams
+    verbs:
+      - get
+  - apiGroups:
+      - eventendpointmanager.apiconnect.ibm.com
+    resources:
+      - eventendpointmanagers
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - management.apiconnect.ibm.com
+    resources:
+      - managementclusters
+    verbs:
+      - get
+  - apiGroups:
+      - eventstreams.ibm.com
+    resources:
+      - kafkatopics
+      - kafkausers
+    verbs:
+      - get
+      - create
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
+  - apiGroups:
+      - zen.cpd.ibm.com
+    resources:
+      - zenservices
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - routes
+    verbs:
+      - get

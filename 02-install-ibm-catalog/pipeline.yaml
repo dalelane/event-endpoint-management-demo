@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-ibmcatalog
+spec:
+  workspaces:
+    - name: pipeline-shared-workspace
+  tasks:
+    - name: clone-source-code
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      params:
+        - name: url
+          value: "https://github.com/dalelane/event-endpoint-management-demo"
+      workspaces:
+        - name: output
+          workspace: pipeline-shared-workspace
+
+    - name: create-ibm-catalog-source
+      taskRef:
+        name: create-resource
+      params:
+        - name: resource-yaml
+          value: "./02-install-ibm-catalog/resources/ibm-catalog-source.yaml"
+        - name: namespace
+          value: "openshift-marketplace"
+      runAfter:
+        - clone-source-code
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+    - name: wait-for-ibm-catalog
+      taskRef:
+        name: wait-for-pod
+      params:
+        - name: pod-label
+          value: "olm.catalogSource=ibm-operator-catalog"
+        - name: pod-namespace
+          value: "openshift-marketplace"
+      runAfter:
+        - create-ibm-catalog-source

@@ -1,0 +1,58 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: apic-cli-login
+spec:
+  params:
+    - name: instance-name
+      description: the name of the APIC instance to log in to
+    - name: instance-namespace
+      description: the namespace that the APIC instance is in
+  workspaces:
+    - name: apic-cli
+      description: workspace where the apic CLI is
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "getting jq"
+        curl --output jq --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+        chmod +x jq
+
+        echo "restoring the cli state from the workspace"
+        mv /workspace/apic-cli/apiconnect-config ~/.apiconnect
+
+        echo "finding the Cloud Pak for Integration install"
+        CP4I_NAMESPACE=$(kubectl get zenservice -A -o jsonpath='{..namespace}')
+
+        echo "creating IAM token"
+        CS_HOST=https://$(kubectl -n kube-public get cm ibmcloud-cluster-info -o jsonpath='{.data.cluster_address}')
+        IAM_PASSWORD=$(kubectl get secret -n ibm-common-services platform-auth-idp-credentials -o jsonpath='{..admin_password}' | base64 -d)
+        IAM_TOKEN=$(curl -k -s -X POST -H 'Content-Type: application/x-www-form-urlencoded' -H 'Accept: application/json' -d "grant_type=password&username=admin&password=${IAM_PASSWORD}&scope=openid" "${CS_HOST}"/v1/auth/identitytoken | ./jq -r .access_token)
+
+        echo "creating Zen token"
+        ZEN_HOST=https://$(kubectl get route -n $CP4I_NAMESPACE cpd -o=jsonpath='{.spec.host}')
+        ZEN_TOKEN=$(curl -k -s "${ZEN_HOST}"/v1/preauth/validateAuth -H "username: admin" -H "iam-token: ${IAM_TOKEN}" | ./jq -r .accessToken)
+
+        echo "downloading apic config json file"
+        PLATFORM_API_URL=$(kubectl get eventendpointmanagers $(params.instance-name) -n $(params.instance-namespace) -o=jsonpath='{.status.endpoints[?(@.name=="platformApi")].uri}')
+        TOOLKIT_CREDS_URL="$PLATFORM_API_URL/cloud/settings/toolkit-credentials"
+        curl -k $TOOLKIT_CREDS_URL -H "Authorization: Bearer ${ZEN_TOKEN}" -H "Accept: application/json" -H "Content-Type: application/json" -o creds.json
+
+        echo "setting up apic cli with config file"
+        yes | /workspace/apic-cli/apic client-creds:set creds.json
+
+        echo "creating apic API key"
+        APIC_APIKEY=$(curl -k -s -X POST "${PLATFORM_API_URL}"/cloud/api-keys -H "Authorization: Bearer ${ZEN_TOKEN}" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"client_type":"toolkit","description":"Tookit API key"}' | ./jq -r .api_key)
+
+        echo "logging into API manager"
+        APIM_ENDPOINT=$(kubectl -n $(params.instance-namespace) get mgmt $(params.instance-name)-mgmt -o jsonpath="https://{.status.zenRoute}")
+        yes n | /workspace/apic-cli/apic login --context provider --server $APIM_ENDPOINT --sso --apiKey $APIC_APIKEY
+
+        echo "storing the cli state in the workspace"
+        mv ~/.apiconnect /workspace/apic-cli/apiconnect-config
+
+        echo "verifying /workspace/apic-cli contents:"
+        ls -l /workspace/apic-cli

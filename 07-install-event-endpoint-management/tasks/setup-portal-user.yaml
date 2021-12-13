@@ -1,0 +1,75 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: setup-apic-portal-user
+spec:
+  params:
+    - name: instance-name
+      description: the name of the APIC instance to log in to
+    - name: instance-namespace
+      description: the namespace that the APIC instance is in
+    - name: apic-org-name
+      description: name of the APIC provider org to use
+    - name: apic-catalog-name
+      description: name of the APIC catalog to create
+    - name: portal-username
+      description: name of the user and consumer org to create
+  workspaces:
+    - name: apic-cli
+      description: workspace where the apic CLI is
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        echo "getting jq"
+        curl --output jq --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+        chmod +x jq
+
+        echo "restoring the cli state from the workspace"
+        cp -rf /workspace/apic-cli/apiconnect-config ~/.apiconnect
+
+        echo "generating portal user details"
+        PORTAL_USERNAME=$(params.portal-username)
+        PORTAL_PASSWORD=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | tr -s 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
+        echo "creating secret to store portal user credentials"
+        cat >portaluserspec.yaml <<EOL
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: portal-credentials
+          namespace: pipeline-credentials
+        type: kubernetes.io/basic-auth
+        stringData:
+          username: $PORTAL_USERNAME
+          password: $PORTAL_PASSWORD
+        EOL
+        kubectl apply -f portaluserspec.yaml
+
+        echo "getting portal details"
+        APIM_ENDPOINT=$(kubectl -n $(params.instance-namespace) get mgmt $(params.instance-name)-mgmt -o jsonpath="https://{.status.zenRoute}")
+
+        echo "preparing portal user config"
+        cat >portaluser.conf <<EOL
+        username: $PORTAL_USERNAME
+        email: $(params.portal-username)@demo-developer.com
+        first_name: Demo
+        last_name: User
+        password: $PORTAL_PASSWORD
+        EOL
+
+        echo "creating portal user"
+        /workspace/apic-cli/apic users:create --server $APIM_ENDPOINT --org $(params.apic-org-name) --user-registry $(params.apic-catalog-name)-catalog portaluser.conf --format json --output - > created-user.json
+        cat created-user.json
+
+        echo "preparing consumer organisation config"
+        USER_URL=$(./jq -r .url created-user.json)
+        cat >portalorg.conf <<EOL
+        name: $(params.portal-username)
+        owner_url: $USER_URL
+        EOL
+
+        echo "creating portal org"
+        /workspace/apic-cli/apic consumer-orgs:create  --server $APIM_ENDPOINT --org $(params.apic-org-name) --catalog  $(params.apic-catalog-name) portalorg.conf --format json --output -

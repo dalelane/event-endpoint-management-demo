@@ -1,0 +1,92 @@
+# wait for a CP4I instance to be ready
+#
+#  most CP4I capabilities have a .status.phase property
+#  that can be used for this, but some depend solely on
+#  status conditions - so this task uses the instance
+#  type to determine the best approach to waiting
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: wait-for-cp4i-operand
+spec:
+  params:
+    - name: instance-type
+      description: the type of thing to wait for (e.g. 'eventstreams')
+    - name: instance-name
+      description: the name of the thing to wait for
+    - name: instance-namespace
+      description: the namespace that the thing is in
+  steps:
+    - name: run-kubectl
+      image: image-registry.openshift-image-registry.svc:5000/openshift/tools
+      script: |
+        #!/bin/sh
+
+        if [ $(params.instance-type) = "platformnavigator" ]; then
+            # Platform Navigator doesn't have a status phase field so
+            #  we use the Ready condition to determine readiness
+
+            READY=False
+            while [ "$READY" = "False" ] || [ "$READY" = "" ]
+            do
+                READY=`kubectl get $(params.instance-type) $(params.instance-name) -n $(params.instance-namespace) -ojsonpath='{.status.conditions[?(@.type=="Ready")].status}'`
+                echo "ready: $READY"
+                sleep 30
+            done
+
+            if [ "$READY" = "True" ]; then
+                exit 0
+            fi
+
+        else
+            # Most CP4I capabilities have a status phase field, so
+            #  this is the simplest test
+
+            PHASE="Pending"
+            while [ "$PHASE" = "Pending" ] || [ "$PHASE" = "Updating" ] || [ "$PHASE" = "" ]
+            do
+                PHASE=`kubectl get $(params.instance-type) $(params.instance-name) -n $(params.instance-namespace) -ojsonpath='{.status.phase}'`
+                echo "status: $PHASE"
+                sleep 30
+            done
+
+            if [ "$PHASE" = "Ready" ] || [ "$PHASE" = "Succeeded" ] ; then
+                exit 0
+            fi
+
+            if [ $(params.instance-type) = "eventstreams" ]; then
+                # Event Streams has a bug that on most new installs the
+                #  instance immediately goes into a Failed state because
+                #  the status is set based on checking if an IAM config
+                #  map is available, before that config map has been
+                #  copied across
+                # Deleting the operator pod forces it to restart the
+                #  reconcile loop, so it checks for the IAM config map
+                #  again, and marks the instance as Ready.
+                # The script below does that workaround - deletes the pod,
+                #  waits for it to start up, leaves it for a while to
+                #  re-run the reconcile loop, and then re-check the ES
+                #  status
+
+                kubectl delete pods -n $(params.instance-namespace) -l app.kubernetes.io/instance=eventstreams-operator
+                sleep 30
+                kubectl wait   pods -n $(params.instance-namespace) -l app.kubernetes.io/instance=eventstreams-operator --for=condition=ready --timeout=15m
+
+                # the instance will likely still have a "Failed" state
+                #  from before the Operator pod was deleted - the state
+                #  is only modified at the end of a reconcile loop
+                # so we have to be careful not to check again too soon
+                sleep 500
+
+                kubectl wait eventstreams -n $(params.instance-namespace) $(params.instance-name) --for=condition=ready --timeout=15m
+                PHASE=`kubectl get $(params.instance-type) $(params.instance-name) -n $(params.instance-namespace) -ojsonpath='{.status.phase}'`
+
+                if [ "$PHASE" = "Ready" ]; then
+                  exit 0
+                fi
+            fi
+        fi
+
+        # if we're here, we haven't seen any healthy 'ready' state
+        #  so we fail the task
+        exit 1
