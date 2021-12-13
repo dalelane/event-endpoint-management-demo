@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Event Endpoint Management "demo in a box"</title>
+<body style="font-family: sans-serif;">
+<h1>Event Endpoint Management "demo in a box"</h1>
+<p><strong>In this post, I'll share how you can get your own Event Endpoint Management demo instance with just seven minutes of work.</strong></p>
+<p><em>(Seven minutes of hands-on-keyboard time... there is a lot of waiting-for-stuff-to-run time, but it doesn't sound so impressive if I include waiting time!)</em></p>
+<p><img style="width: 100%; max-width: 1000px;" src="https://raw.githubusercontent.com/dalelane/event-endpoint-management-demo/docs/docs/simplified-architecture.png" /></p>
+<h3>Why should you use this?</h3>
+<p>The best way to learn about something new is to get hands-on and play with it.</p>
+<p>With something like <a href="https://community.ibm.com/community/user/search?s=%23eventendpointmanagement&amp;executesearch=true">Event Endpoint Management</a>, to start kicking the tyres you need something to put in it. It starts getting interesting to play with once you have a few streams of events to publish and manage with it. You can really start to see the developer experience that it enables once you have a developer portal populated with a variety of real event sources.</p>
+<p>But setting all of that up (creating a Kafka cluster, creating a bunch of Kafka topics, starting applications to produce messages to those topics, writing documentation describing the schemas of those messages, creating Kafka credentials and configuring the gateway with them, etc.) takes a little effort.</p>
+<p>The idea of giving you this "<strong>demo in a box</strong>" is to do all of that for you, so you can dive straight in to playing with it - with hardly any up-front effort.</p>
+<h3>What do you get?</h3>
+<p>Before I jump into showing you how to set it up for yourself, let me show you what you'll get.</p>
+<ul>
+<li>A variety of event sources discoverable through a <strong>Developer Portal</strong>.</li>
+</ul>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-developer-portal-product.png" /><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-developer-portal-api.png" /></p>
+<ul>
+<li>Kafka topics documented using <a href="https://community.ibm.com/community/user/search?executeSearch=true&amp;SearchTerm=asyncapi">AsyncAPI</a> and published in an <strong>API Manager</strong>.</li>
+</ul>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-api-manager-apis.png" /><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-api-manager-api.png" /></p>
+<ul>
+<li>Underlying topics for each of these event sources as a Kafka topic in your own instance of <strong>Event Streams</strong>, managing a range of Connectors to create the streams of events.</li>
+</ul>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-eventstreams-topics.png" /><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-eventstreams-topic.png" /></p>
+<p>Under the covers, the demo script:</p>
+<ul>
+<li>adds the IBM catalog to your OpenShift cluster</li>
+<li>configures Cloud Pak Foundational Services</li>
+<li>installs Event Streams - and creates a Kafka cluster</li>
+<li>sets up a Kafka Connect cluster</li>
+<li>starts up a variety of Connectors, publishing to Kafka topics</li>
+<li>installs Event Endpoint Management - and sets up a catalog and developer portal</li>
+<li>generates AsyncAPI documentation for all of the topics</li>
+<li>sets up credentials for the Event Gateway and publishes the topics to Event Endpoint Management</li>
+</ul>
+<p><img style="max-width: 1000px; width: 95%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/simplified-architecture-2.png" /></p>
+<h3>Okay, you're sold! How can you get one of these for yourself?</h3>
+<p>I'll go through what you need to do step by step. For each step, I've recorded a video of me doing it.</p>
+<p><em>They are very boring videos - there isn't any audio, so you're spared any more of my voice for these bits. And I didn't want to speed them up, so you can see exactly how long it takes! </em></p>
+<p>I haven't included time to get the pre-requisites that I'm hoping you'll already have:</p>
+<ul>
+<li>command line tools: <code>oc</code>, <code>git</code>, <code>make</code></li>
+<li>a Github account</li>
+<li>an IBM id account</li>
+<li>a Twitter account</li>
+</ul>
+<p>If you need to go get any of those, then this will take you a little longer than seven minutes, sorry! Hopefully not much longer though.</p>
+<p><em>By the way - I know you'll see a bunch of my passwords and API keys in the videos, but don't worry on my behalf - the cluster I used for the demo has been deleted, and I've revoked all the credentials that you'll see.</em></p>
+<br />
+<hr/><h4>Step 0 - get the code</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">time: </td>
+<td> 20 seconds</td>
+</tr>
+<tr>
+<td align="right">pre-requisites: </td>
+<td><code>git</code></td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>Clone the demo setup code from <a href="https://github.com/dalelane/event-endpoint-management-demo">github.com/dalelane/event-endpoint-management-demo</a>.</p>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/5YPYKQHmc60" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/5YPYKQHmc60">video recording at youtu.be/5YPYKQHmc60</a></small></p>
+<br />
+<hr/><h4>Step 1 - get an API key for stock price events</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">time: </td>
+<td>50 seconds</td>
+</tr>
+<tr>
+<td align="right">pre-requisites: </td>
+<td><em>none</em></td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>You need a free API key for the streams of events the demo will set up with stock price changes.</p>
+<ol type="a">
+<li><a style="font-size: 0.7em;" href="https://youtu.be/7ojNmattrSM?t=0">0s</a>   Find the <code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/template-alphavantage-apikey.yaml"></a>template-alphavantage-apikey.yaml</code> file</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/7ojNmattrSM?t=5">5s</a>   Rename it to <code>alphavantage-apikey.yaml</code></li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/7ojNmattrSM?t=15">15s</a> Go to <a href="https://www.alphavantage.co">alphavantage</a> and get a free API key</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/7ojNmattrSM?t=37">37s</a> Update your <code>alphavantage-apikey.yaml</code> file to replace the <code>apikey</code> value with your API key</li>
+</ol>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/7ojNmattrSM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/7ojNmattrSM">video recording at youtu.be/7ojNmattrSM</a></small></p>
+<br />
+<hr/><h4>Step 2 - get an access token for github</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">time: </td>
+<td>60 seconds</td>
+</tr>
+<tr>
+<td align="right">pre-requisites: </td>
+<td>a Github account</td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>The demo setup automation will grab some resources from the event-endpoint-management-demo on Github, so you need to give it an access token it can use to do that.</p>
+<ol type="a">
+<li><a style="font-size: 0.7em;" href="https://youtu.be/zX9YCklRtIg?t=0">0s</a>   Find the <code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/template-github-credentials.yaml">template-github-credentials.yaml</a></code> file</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/zX9YCklRtIg?t=5">5s</a>   Rename it to <code>github-credentials.yaml</code></li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/zX9YCklRtIg?t=10">10s</a> Replace the username value with your Github username</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/zX9YCklRtIg?t=20">20s</a> Go to <a href="https://github.com">github.com</a> and create a Personal Access Token (in <strong>Settings</strong> -&gt; <strong>Developer settings</strong>)</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/zX9YCklRtIg?t=35">35s</a> Give it a name and an expiration - but don't add any additional scopes</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/zX9YCklRtIg?t=50">50s</a> Update the <code>github-credentials.yaml</code> file to replace the <code>password</code> value with your access token</li>
+</ol>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/zX9YCklRtIg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/zX9YCklRtIg">video recording at youtu.be/zX9YCklRtIg</a></small></p>
+<br />
+<hr/><h4>Step 3 - get an entitlement key for IBM images</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">time: </td>
+<td>60 seconds</td>
+</tr>
+<tr>
+<td align="right">pre-requisites: </td>
+<td><code>base64</code>, an IBM account</td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>Installing the IBM software used in the demo requires credentials for pulling the docker images from Entitled Registry, so you need to give it an entitlement key it can use to do that.</p>
+<ol type="a">
+<li><a style="font-size: 0.7em;" href="https://youtu.be/s3AofVrMBX0?t=0">0s</a>   Find the <code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/template-ibm-entitlement-key.yaml">template-ibm-entitlement-key.yaml</a></code> file</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/s3AofVrMBX0?t=5">5s</a>   Rename it to <code>ibm-entitlement-key.yaml</code></li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/s3AofVrMBX0?t=15">15s</a> Go to <a href="https://myibm.ibm.com/products-services/containerlibrary">My IBM</a> and copy your Entitlement key</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/s3AofVrMBX0?t=22">22s</a> Paste your entitlement key into the empty password section in the <code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/template-dockerconfig.json">template-dockerconfig.json</a></code></li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/s3AofVrMBX0?t=35">35s</a> base64-encode the contents of the <code>template-dockerconfig.json</code> file</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/s3AofVrMBX0?t=43">43s</a> Update the <code>ibm-entitlement-key.yaml</code> file to replace the <code>.dockerconfigjson</code> value with your base64-encoded docker config json</li>
+</ol>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/s3AofVrMBX0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/s3AofVrMBX0">video recording at youtu.be/s3AofVrMBX0</a></small></p>
+<br />
+<hr/><h4>Step 4 - get a twitter API key</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">time: </td>
+<td>80 seconds</td>
+</tr>
+<tr>
+<td align="right">pre-requisites: </td>
+<td>a Twitter account</td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>You need a free API key for the streams of events the demo will set up with messages from Twitter.</p>
+<ol type="a">
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=0">0s</a>   Find the <code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/template-twitter-apikey.yaml">template-twitter-apikey.yaml</a></code> file</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=3">3s</a>   Rename it to <code>twitter-apikey.yaml</code> file</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=12">12s</a> Go to <a href="https://developer.twitter.com/">developer.twitter.com</a> and navigate to the <strong>Developer Portal</strong></li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=18">18s</a> Go to your <strong>Standalone Apps</strong> on your <strong>Projects &amp; Apps</strong> page</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=23">23s</a> Create a new standalone app</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=33">33s</a> Update the <code>twitter-apikey.yaml</code> file to replace the <code>consumerKey</code> value with your API Key</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=41">41s</a> Update the <code>twitter-apikey.yaml</code> file to replace the <code>consumerKeySecret</code> value with your API Key Secret</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=50">50s</a> Generate an Access Token and Secret (from <strong>App settings</strong> -&gt; <strong>Keys and tokens</strong> -&gt; <strong>Access Token and Secret</strong> -&gt; <strong>Generate</strong>)</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=60">60s</a> Update the <code>twitter-apikey.yaml</code> file to replace the <code>accessToken</code> value with your Access Token</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/p4iLElvQCf8?t=67">67s</a> Update the <code>twitter-apikey.yaml</code> file to replace the <code>accessTokenSecret</code> value with your Access Token Secret</li>
+</ol>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/p4iLElvQCf8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/p4iLElvQCf8">video recording at youtu.be/p4iLElvQCf8</a></small></p>
+<br />
+<hr/><h4>Step 5 - get an OpenShift cluster</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">(hands-on-keyboard) time: </td>
+<td>90 seconds</td>
+</tr>
+<tr>
+<td align="right">pre-requisites: </td>
+<td>somewhere to create an OpenShift cluster!</td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>You need somewhere to run the demo!</p>
+<p>I used <a href="https://techzone.ibm.com">TechZone</a> to reserve a demo cluster on the managed Red Hat OpenShift service on IBM Cloud (ROKS).</p>
+<ol type="a">
+<li><a style="font-size: 0.7em;" href="https://youtu.be/pol7hXxC2is?t=0">0s</a>   Go to your OpenShift provider</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/pol7hXxC2is?t=68">68s</a> Make sure you have enough space on your worker nodes for all the demo components</li>
+</ol>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/pol7hXxC2is" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/pol7hXxC2is">video recording at youtu.be/pol7hXxC2is</a></small></p>
+<p>When everything is up and running, this is how full my cluster was:</p>
+<p><img style="border: thin black solid; max-width: 400px;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/deployment-overview.png" /></p>
+<p>You can tell I was a bit over-generous with the size of the cluster I reserved!</p>
+<p><em>You probably won't get a cluster instantly, so now is a good time to go get yourself a coffee!</em></p>
+<br />
+<hr/><h4>Optional step - choose the storage classes to use</h4>
+<p>I've chosen storage classes to use assuming that you'll run this on ROKS as well. But if you're running OpenShift somewhere else, you'll likely want to choose your own storage class names.</p>
+<p>To choose the storage classes used by the Cloud Pak for Integration components installed, edit the <code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/cp4i-overrides.yaml">cp4i-overrides.yaml</a></code> file before you start the demo deployment.</p>
+<pre style="max-height: 400px; padding: 10px; overflow: scroll; border: thin black solid; font-size: smaller;">apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: cp4i-overrides
+    namespace: pipeline-eventdrivendemo
+type: kubernetes.io/basic-auth
+data:
+    ibm-common-service-operator-storageClassName: ibmc-file-gold-gid
+    ibm-integration-platform-navigator-storageClassName: ibmc-file-gold-gid
+    ibm-eventstreams-storageClassName: ibmc-file-gold-gid
+    ibm-apiconnect-storageClassName: ibmc-block-gold</pre>
+<p>To choose the storage classes used by the demo deployment pipelines, edit the values identified by: <code>find . -name 'pipelinerun*yaml' -print0 | sort -z | xargs -0 grep storageClassName</code></p>
+<pre style="max-height: 400px; padding: 10px; overflow: scroll; border: thin black solid; font-size: smaller;">$ find . -name 'pipelinerun*yaml' -print0 | sort -z | xargs -0 grep storageClassName
+
+./02-install-ibm-catalog/pipelinerun.yaml:          storageClassName: ibmc-block-gold
+./03-install-ibm-common-services/pipelinerun.yaml:          storageClassName: ibmc-block-gold
+./04-install-platform-navigator/pipelinerun.yaml:          storageClassName: ibmc-block-gold
+./05-install-event-streams/pipelinerun.yaml:          storageClassName: ibmc-block-gold
+./06-start-kafka-connectors/pipelinerun.yaml:          storageClassName: ibmc-block-gold
+./07-install-event-endpoint-management/pipelinerun-install.yaml:          storageClassName: ibmc-block-gold
+./07-install-event-endpoint-management/pipelinerun-setup.yaml:          storageClassName: ibmc-block-gold
+./08-publish-topics-to-eem/pipelinerun.yaml:          storageClassName: ibmc-block-gold
+./08-publish-topics-to-eem/pipelinerun.yaml:          storageClassName: ibmc-block-gold</pre>
+<br />
+<hr/><h4>Step 6 - start the demo deployment</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">(hands-on-keyboard) time: </td>
+<td>40 seconds</td>
+</tr>
+<tr>
+<td align="right">pre-requisites: </td>
+<td><code>oc</code>, <code>make</code></td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>You've got the demo automation, you've collected the credentials you need, and you've got an OpenShift cluster.</p>
+<p>It's time to start the demo deployment.</p>
+<ol type="a">
+<li><a style="font-size: 0.7em;" href="https://youtu.be/l3H3Lbl7DCw?t=0">0s</a> Navigate to the OpenShift console</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/l3H3Lbl7DCw?t=8">8s</a> Login to the cluster using the oc CLI</li>
+<li><a style="font-size: 0.7em;" href="https://youtu.be/l3H3Lbl7DCw?t=24">24s</a> Run make all</li>
+</ol>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/l3H3Lbl7DCw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/l3H3Lbl7DCw">video recording at youtu.be/l3H3Lbl7DCw</a></small></p>
+<br />
+<hr/><h4>Step 7 - wait patiently for the demo deployment</h4>
+<table cellspacing="5" border="0">
+<tbody>
+<tr>
+<td align="right">(hands-on-keyboard) time: </td>
+<td>none!</td>
+</tr>
+</tbody>
+</table>
+<br />
+<p>This is going to take a while.</p>
+<p><em>Sorry - the demo setup script could really do with parallelising some steps! I went more with simplicity than efficiency. (<a href="https://github.com/dalelane/event-endpoint-management-demo/pulls">Pull requests</a> are welcome!)</em></p>
+<p>The deployment script only outputs which step it is up to.</p>
+<pre style="max-height: 300px; padding: 10px; overflow: scroll; border: thin black solid; font-size: smaller;">dalelane@Dales-MBP-2 event-endpoint-management-demo % make all
+
+subscription.operators.coreos.com/openshift-pipelines-operator-rh created
+namespace/pipeline-credentials created
+secret/ibm-entitlement-key created
+namespace/pipeline-eventdrivendemo created
+Now using project "pipeline-eventdrivendemo" on server "https://c102-e.eu-de.containers.cloud.ibm.com:30823".
+secret/github-credentials created
+secret/alphavantage created
+secret/twitter created
+configmap/cp4i-overrides created
+serviceaccount/pipeline-deployer-serviceaccount created
+task.tekton.dev/copy-secret created
+task.tekton.dev/create-cp4i-instance created
+task.tekton.dev/create-namespace created
+task.tekton.dev/create-resource created
+task.tekton.dev/install-operator created
+task.tekton.dev/wait-for-cp4i-operand created
+task.tekton.dev/wait-for-operator created
+task.tekton.dev/wait-for-pod created
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-ibmcatalog-role created
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-ibmcatalog-rolebinding created
+pipeline.tekton.dev/pipeline-ibmcatalog created
+------------------------------------------------------------
+Installing the IBM Catalog into the cluster...
+------------------------------------------------------------
+pipelinerun.tekton.dev/install-ibm-catalog-jsk75
+pipelinerun.tekton.dev/install-ibm-catalog-jsk75 condition met
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-commonservices-role created
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-commonservices-rolebinding created
+pipeline.tekton.dev/pipeline-cp4i created
+------------------------------------------------------------
+Configuring IBM Common Services...
+------------------------------------------------------------
+pipelinerun.tekton.dev/install-ibm-common-services-f62pw
+pipelinerun.tekton.dev/install-ibm-common-services-f62pw condition met
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-platformnavigator-role created
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-platformnavigator-rolebinding created
+pipeline.tekton.dev/pipeline-cp4i configured
+------------------------------------------------------------
+Creating the Cloud Pak for Integration Platform Navigator...
+------------------------------------------------------------
+pipelinerun.tekton.dev/install-platform-navigator-wdmsg
+pipelinerun.tekton.dev/install-platform-navigator-wdmsg condition met
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-eventstreams-role created
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-eventstreams-rolebinding created
+pipeline.tekton.dev/pipeline-cp4i configured
+------------------------------------------------------------
+Creating the Event Streams instance...
+------------------------------------------------------------
+pipelinerun.tekton.dev/install-event-streams-kt9ws
+pipelinerun.tekton.dev/install-event-streams-kt9ws condition met
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-kafkaconnect-role created
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-kafkaconnect-rolebinding created
+task.tekton.dev/create-kafka-connectors-docker-image created
+task.tekton.dev/create-kafka-credentials created
+task.tekton.dev/maven created
+configmap/pipeline-maven-settings created
+pipeline.tekton.dev/pipeline-kafkaconnectors created
+------------------------------------------------------------
+Building and starting Kafka connectors...
+------------------------------------------------------------
+pipelinerun.tekton.dev/start-kafka-connectors-bx9pj
+pipelinerun.tekton.dev/start-kafka-connectors-bx9pj condition met
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-eventendptmgmt-role created
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-eventendptmgmt-rolebinding created
+pipeline.tekton.dev/pipeline-cp4i configured
+------------------------------------------------------------
+Creating the Event Endpoint Management instance...
+------------------------------------------------------------
+pipelinerun.tekton.dev/install-event-endpoint-management-tbvw4
+pipelinerun.tekton.dev/install-event-endpoint-management-tbvw4 condition met
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-eventendptmgmt-role unchanged
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-eventendptmgmt-rolebinding unchanged
+task.tekton.dev/apic-cli-login created
+task.tekton.dev/get-apic-cli created
+task.tekton.dev/setup-apic-admin-user created
+task.tekton.dev/setup-apic-catalog created
+task.tekton.dev/setup-apic-portal-user created
+task.tekton.dev/setup-apic-portal created
+task.tekton.dev/setup-apic-provider-org created
+pipeline.tekton.dev/pipeline-event-endpoint-management created
+------------------------------------------------------------
+Setting up the Event Endpoint Management instance...
+------------------------------------------------------------
+pipelinerun.tekton.dev/setup-event-endpoint-management-zbznf
+pipelinerun.tekton.dev/setup-event-endpoint-management-zbznf condition met
+clusterrole.rbac.authorization.k8s.io/pipeline-deployer-stockpricesasyncapi-role created
+clusterrolebinding.rbac.authorization.k8s.io/pipeline-deployer-stockpricesasyncapi-rolebinding created
+task.tekton.dev/apic-cli-login configured
+task.tekton.dev/apic-stockprices-asyncapi-publish created
+task.tekton.dev/create-kafka-credentials configured
+task.tekton.dev/generate-asyncapi created
+task.tekton.dev/get-apic-cli configured
+pipeline.tekton.dev/pipeline-asyncapi created
+------------------------------------------------------------
+Generating and publishing doc for connectors...
+------------------------------------------------------------
+pipelinerun.tekton.dev/publish-topics-to-eem-5pdjj
+pipelinerun.tekton.dev/publish-topics-to-eem-5pdjj condition met
+
+Install complete.
+
+
+Cloud Pak for Integration : https://cpd-integration.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud
+username                  : admin
+password                  : fZG9JeSO8p1CzRZPifVxS1IOBoCyojRG
+
+Event Streams             : https://cpd-integration.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud/integration/kafka-clusters/eventstreams/es/
+username                  : admin
+password                  : fZG9JeSO8p1CzRZPifVxS1IOBoCyojRG
+
+Event Endpoint Management : https://cpd-integration.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud/integration/apis/eventendpointmanagement/eem/manager
+username                  : admin
+password                  : fZG9JeSO8p1CzRZPifVxS1IOBoCyojRG
+
+Developer Portal          : https://eem-ptl-portal-web-eventendpointmanagement.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud/events-demo/events-catalog/
+username                  : demouser
+password                  : FDL53QdIMQwnEWCwRFkVlZXpysGTGX0L
+</pre>
+<p>If you go to the <strong>Pipelines</strong> page in the <strong>OpenShift console</strong>, you'll also see how far it has got.</p>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-pipelines-1.png" /></p>
+<p>You'll also have access to the detailed logs for each step.</p>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-pipelines-2.png" /></p>
+<p><em>Try to resist keep checking though.</em></p>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-pipelines-3.png" /></p>
+<p><em>You don't need to do anything in this step!</em></p>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-pipelines-4.png" /></p>
+<p><em>It won't go any faster if you keep watching it!</em></p>
+<p><img style="max-width: 500px; width: 80%;" src="https://github.com/dalelane/event-endpoint-management-demo/raw/docs/docs/screenshot-pipelines-5.png" /></p>
+<br />
+<hr/><h4>Step 8 - access the demo</h4>
+<p>The last thing the demo deployment script does is print out the URLs and username/password for each of the demo components.</p>
+<p>Make a note of them.</p>
+<p>If you lose them, you can generate this again by running <code>make output_details</code></p>
+<pre style="max-height: 300px; padding: 10px; overflow: scroll; border: thin black solid; font-size: smaller;">dalelane@Dales-MBP-2 event-endpoint-management-demo % make output_details
+Install complete.
+
+
+Cloud Pak for Integration : https://cpd-integration.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud
+username                  : admin
+password                  : fZG9JeSO8p1CzRZPifVxS1IOBoCyojRG
+
+Event Streams             : https://cpd-integration.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud/integration/kafka-clusters/eventstreams/es/
+username                  : admin
+password                  : fZG9JeSO8p1CzRZPifVxS1IOBoCyojRG
+
+Event Endpoint Management : https://cpd-integration.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud/integration/apis/eventendpointmanagement/eem/manager
+username                  : admin
+password                  : fZG9JeSO8p1CzRZPifVxS1IOBoCyojRG
+
+Developer Portal          : https://eem-ptl-portal-web-eventendpointmanagement.itzroks-120000f8p4-5mlabz-6ccd7f378ae819553d37d5f2ee142bd6-0000.ams03.containers.appdomain.cloud/events-demo/events-catalog/
+username                  : demouser
+password                  : FDL53QdIMQwnEWCwRFkVlZXpysGTGX0L
+</pre>
+<p>If you want to get rid of all the resources associated with the deployment pipelines, you can run <code>make clean</code>. (<em>This doesn't remove any of the actual demo itself, just the automation used to deploy it</em>)</p>
+<br />
+<hr/><h4>Step 9 - try it out</h4>
+<p>Use the URLs and usernames/passwords in the output to access some of the UIs deployed by the demo.</p>
+<p>The following videos give you an idea of what you can expect to see. (<em>These ones do include audio, sorry!</em>)</p>
+<br/>
+<p><strong>Event Streams</strong></p>
+<p>This is the UI that the owner of the Kafka cluster would use. You can see all of the topics that the demo comes with:</p>
+<ul>
+<li>five topics with <strong>stock price change events</strong> for different tech companies
+<ul>
+<li>These topics will get a new event roughly once every minute. Each message contains the stock price at that time. They're a nice example of a topic with a lot of historical data.</li>
+</ul>
+</li>
+<li>a topic with events from <strong>twitter</strong>
+<ul>
+<li>This topic gets a new message every time someone posts a tweet mentioning the word "kafka". Each message contains everything about that tweet - what they said, who posted it, and so on. You can try posting the word "Kafka" to twitter yourself and see new events appear on the topic.</li>
+</ul>
+</li>
+<li>two topics with flight events - one for when planes land, one for when planes take off
+<ul>
+<li>These are generated events about a fictional airport. This helps to guarantee that you'll always get new events every few seconds (unlike the twitter topic for example, where if no-one mentions kafka you might not get any new messages for a while, or the stock price topics which won't get any new messages when stocks aren't traded, such as during weekends)</li>
+</ul>
+</li>
+<li>a topic with random values
+<ul>
+<li>Messages are posted to this topic roughly every second. Each message is a JSON payload with a random letter and a random integer.</li>
+</ul>
+</li>
+</ul>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/4rejYy8uytI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/4rejYy8uytI">video recording at youtu.be/5YPYKQHmc60</a></small></p>
+<br/>
+<p><strong>Event Endpoint Management (API Manager)</strong></p>
+<p>This is the UI that someone would use to document and publish their Kafka topics.</p>
+<p>An "Events demo" catalog is pre-created for you, with an Event Gateway and Developer Portal set up and ready for use.</p>
+<p>All of the demo Event Streams topics are documented in the API catalog using <a href="https://community.ibm.com/community/user/search?executeSearch=true&amp;SearchTerm=asyncapi">AsyncAPI</a>.</p>
+<p>The Event Gateway is configured for use with the topics, using custom Kafka credentials and SSL certificates generated for each topic.</p>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/9mZBNzdyBrs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/9mZBNzdyBrs">video recording at youtu.be/5YPYKQHmc60</a></small></p>
+<br/>
+<p><strong>Event Endpoint Management (Developer Portal)</strong></p>
+<p>This is the UI that someone would use to discover the Kafka topics that are available within their organisation for them to use in their applications.</p>
+<p>All of the demo Event Streams topics are published in the Developer Portal, with documentation describing where the data comes from and the schema of the messages.</p>
+<p>The Portal helps developers to use the topics they discover, with generated code for creating new applications, and configuration properties for existing applications.</p>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/S-r47sYM1qk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/S-r47sYM1qk">video recording at youtu.be/5YPYKQHmc60</a></small></p>
+<br />
+<hr/><h4>Step 10 - try creating a client app</h4>
+<p>You can try using the Developer Portal to create your own client application.</p>
+<p>The Developer Portal provides a self-service way to create credentials for your application. You just need to log on first, using the credentials in the demo setup output.</p>
+<p>There are some <a href="https://github.com/dalelane/event-endpoint-management-demo/tree/master/99-test-gateway">resources with the demo</a> to help you do this. This is particularly useful if you've not written a Kafka application before.</p>
+<ul>
+<li><code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/99-test-gateway/01-get-jars.sh">01-get-jars.sh</a></code> <br />a script that will download the jars you need to compile and run a Kafka Java application</li>
+<li><code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/99-test-gateway/02-download-truststore.sh">02-download-truststore.sh</a></code> <br />a script that will download a truststore containing the cert for the Event Gateway that <a href="https://community.ibm.com/community/user/integration/blogs/dale-lane1/2021/11/11/connecting-kafka-client-applications-to-eem">you will need for your application to connect</a></li>
+<li><code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/99-test-gateway/SampleApplication.java">SampleApplication.java</a></code><br />sample code from the Developer Portal updated with the truststore config you need for it to run</li>
+<li><code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/99-test-gateway/03-compile-sample.sh">03-compile-sample.sh</a></code> <br />a script that will compile the sample code</li>
+<li><code><a href="https://github.com/dalelane/event-endpoint-management-demo/blob/master/99-test-gateway/04-run-sample.sh">04-run-sample.sh</a></code> <br />a script that will run the sample code</li>
+</ul>
+<iframe style="width: 560px; height: 315px; max-width: 100% !important;" src="https://www.youtube.com/embed/Q6XkjbR4k3g" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="allowfullscreen"></iframe>
+<p><small><a href="https://youtu.be/Q6XkjbR4k3g">video recording at youtu.be/5YPYKQHmc60</a></small></p>
+<h3>Give it a try!</h3>
+<p>This is a long post, but I hope this doesn't put you off giving it a try.</p>
+<p>You just need to create a few credentials, and then run a single command. And I think trying out an instance of Event Endpoint Management that is populated with real live Kafka topics with real messages on them is the best way to get you thinking about how you could use it for real.</p>
+<br />
+</body></html>
