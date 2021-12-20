@@ -5,9 +5,9 @@ metadata:
   labels:
     operators.coreos.com/ibm-eventstreams.eventstreams: ''
 spec:
-  channel: v2.4
+  channel: v2.5
   installPlanApproval: Automatic
   name: ibm-eventstreams
   source: ibm-operator-catalog
   sourceNamespace: openshift-marketplace
-  startingCSV: ibm-eventstreams.v2.4.0
+  startingCSV: ibm-eventstreams.v2.5.0

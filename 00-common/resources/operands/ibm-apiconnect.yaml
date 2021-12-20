@@ -5,11 +5,14 @@ metadata:
 spec:
   license:
     accept: true
-    license: L-RJON-C2YLGB
+    license: L-RJON-C7BJ42
     metric: VIRTUAL_PROCESSOR_CORE
     use: nonproduction
   endpointTypes:
     - Events
+  analytics:
+    storage:
+      enabled: false
   profile: n1xc10.m48
   storageClassName: STORAGECLASS_FROM_OVERRIDES
-  version: 10.0.3.0-ifix1
+  version: 10.0.4.0
