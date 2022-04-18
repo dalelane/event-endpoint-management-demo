@@ -80,7 +80,7 @@ prepare_cp4i_overrides: create_pipeline_namespace
 
 
 
-verify_tekton_pipelines_available:
+verify_tekton_pipelines_available: create_pipeline_namespace
 	@$(call ensure_operator_installed,"openshift-pipelines-operator-rh","./01-install-tekton/tekton-subscription.yaml")
 	@oc apply -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.5/git-clone.yaml -n pipeline-eventdrivendemo
 
