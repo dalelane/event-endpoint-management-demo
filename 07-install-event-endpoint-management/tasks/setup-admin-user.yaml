@@ -11,11 +11,17 @@ spec:
   workspaces:
     - name: apic-cli
       description: workspace where the apic CLI is
+  stepTemplate:
+    env:
+      - name: HOME
+        value: "/tekton/home"
   steps:
     - name: run-kubectl
       image: image-registry.openshift-image-registry.svc:5000/openshift/tools
       script: |
         #!/bin/sh
+
+        cd /tmp
 
         echo "restoring the cli state from the workspace"
         cp -rf /workspace/apic-cli/apiconnect-config ~/.apiconnect

@@ -36,6 +36,8 @@ oc login ...
     - based on [`template-github-credentials.yaml`](./template-github-credentials.yaml) - github personal access token with access to clone this repo - which should be created in the namespace where the pipelines will run
 - `ibm-entitlement-key.yaml`
     - based on [`template-ibm-entitlement-key.yaml`](./template-ibm-entitlement-key.yaml) - secret with an [IBM Entitlement Key](https://www.ibm.com/docs/en/cloud-paks/cp-integration/2021.3?topic=installing-applying-your-entitlement-key) for access to Cloud Pak for Integration software - which should be created in the `pipeline-credentials` namespace
+- `dockerconfig.json`
+    - based on [`template-dockerconfig.json`](./template-dockerconfig.json) - Docker config json with an [IBM Entitlement Key](https://www.ibm.com/docs/en/cloud-paks/cp-integration/2021.3?topic=installing-applying-your-entitlement-key) for access to Cloud Pak for Integration software
 - `alphavantage-apikey.yaml`
     - based on [`template-alphavantage-apikey.yaml`](./template-alphavantage-apikey.yaml) - secret with an [API key from AlphaVantage](https://www.alphavantage.co/support/#api-key) - which should be created in the `pipeline-credentials` namespace
 - `twitter-apikey.yaml`

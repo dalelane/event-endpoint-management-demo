@@ -82,7 +82,6 @@ prepare_cp4i_overrides: create_pipeline_namespace
 
 verify_tekton_pipelines_available: create_pipeline_namespace
 	@$(call ensure_operator_installed,"openshift-pipelines-operator-rh","./01-install-tekton/tekton-subscription.yaml")
-	@oc apply -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.5/git-clone.yaml -n pipeline-eventdrivendemo
 
 
 prepare_general_pipeline: verify_tekton_pipelines_available prepare_entitlement_key set_namespace prepare_github_credentials prepare_stockprice_apikey prepare_twitter_apikey prepare_cp4i_overrides
@@ -179,29 +178,30 @@ cleanup_pipeline_eventstreams: set_namespace
 #
 #
 
-
 prepare_pipeline_kafkaconnectors: prepare_general_pipeline
 	@oc apply -f ./06-start-kafka-connectors/permissions
 	@oc apply -f ./06-start-kafka-connectors/tasks
-	@oc apply -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/maven/0.2/maven.yaml
 	@oc apply -f ./06-start-kafka-connectors/pipeline-maven-settings.yaml
 	@oc apply -f ./06-start-kafka-connectors/pipeline.yaml
+	@oc adm policy add-scc-to-user privileged -z pipeline-deployer-serviceaccount
 
 run_pipeline_kafkaconnectors:
 	@echo "------------------------------------------------------------"
 	@echo "Building and starting Kafka connectors..."
 	@echo "------------------------------------------------------------"
+	@oc create secret generic ibm-entitlement-key-config-json --from-file=config.json=dockerconfig.json --dry-run=client -o yaml | oc apply -n pipeline-eventdrivendemo -f -
 	@$(call wait_for_pipelinerun,$(shell oc create -f ./06-start-kafka-connectors/pipelinerun.yaml -o name))
 
 pipeline_kafkaconnectors: prepare_pipeline_kafkaconnectors run_pipeline_kafkaconnectors
 
 cleanup_pipeline_kafkaconnectors: set_namespace
 	@oc delete --ignore-not-found=true -f ./06-start-kafka-connectors/tasks
-	@oc delete --ignore-not-found=true -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/maven/0.2/maven.yaml
 	@oc delete --ignore-not-found=true -f ./06-start-kafka-connectors/pipeline-maven-settings.yaml
 	@oc delete -l tekton.dev/pipeline=pipeline-kafkaconnectors pipelineruns
 	@oc delete --ignore-not-found=true -f ./06-start-kafka-connectors/pipeline.yaml
 	@oc delete --ignore-not-found=true -f ./06-start-kafka-connectors/permissions
+	@oc adm policy remove-scc-from-user privileged -z pipeline-deployer-serviceaccount
+	@oc delete -n pipeline-eventdrivendemo ibm-entitlement-key-config-json
 
 
 #

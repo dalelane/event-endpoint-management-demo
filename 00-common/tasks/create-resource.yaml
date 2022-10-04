@@ -17,5 +17,5 @@ spec:
       image: image-registry.openshift-image-registry.svc:5000/openshift/tools
       script: |
         #!/bin/sh
-        cd source
+        cd /workspace/source
         kubectl apply -n $(params.namespace) -f $(params.resource-yaml)

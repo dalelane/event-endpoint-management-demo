@@ -1,12 +1,13 @@
-apiVersion: eventstreams.ibm.com/v1beta1
-kind: KafkaConnectS2I
+apiVersion: eventstreams.ibm.com/v1beta2
+kind: KafkaConnect
 metadata:
   name: eem-demo-connectors
   annotations:
     eventstreams.ibm.com/use-connector-resources: "true"
 spec:
-  version: 2.8.0
+  version: 2.8.1
   replicas: 2
+  image: image-registry.openshift-image-registry.svc:5000/eventstreams/es-kafka-connect:latest
   bootstrapServers: es-kafka-bootstrap.eventstreams.svc:9093
   template:
     pod:
@@ -21,7 +22,7 @@ spec:
           productChargedContainers: eem-demo-connectors-connect
           cloudpakId: c8b82d189e7545f0892db9ef2731b90d
           cloudpakName: IBM Cloud Pak for Integration
-          cloudpakVersion: 2021.3.1
+          cloudpakVersion: 2022.2.1
           productCloudpakRatio: "2:1"
   resources:
     requests:

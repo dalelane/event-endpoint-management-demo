@@ -17,11 +17,17 @@ spec:
   workspaces:
     - name: apic-cli
       description: workspace where the apic CLI is
+  stepTemplate:
+    env:
+      - name: HOME
+        value: "/tekton/home"
   steps:
     - name: run-kubectl
       image: image-registry.openshift-image-registry.svc:5000/openshift/tools
       script: |
         #!/bin/sh
+
+        cd /tmp
 
         echo "getting jq"
         curl --output jq --location https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64

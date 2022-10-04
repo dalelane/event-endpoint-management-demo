@@ -14,7 +14,7 @@ spec:
       image: image-registry.openshift-image-registry.svc:5000/openshift/tools
       script: |
         #!/bin/sh
-        cd source
+        cd /workspace/source
 
         # get jq - needed to customize the operator group
         echo "downloading jq"

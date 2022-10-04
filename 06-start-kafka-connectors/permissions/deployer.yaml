@@ -23,7 +23,7 @@ rules:
     resources:
       - kafkatopics
       - kafkausers
-      - kafkaconnects2is
+      - kafkaconnects
       - kafkaconnectors
     verbs:
       - get
@@ -40,11 +40,12 @@ rules:
       - create
       - patch
   - apiGroups:
-      - build.openshift.io
+      - image.openshift.io
     resources:
-      - buildconfigs
-      - buildconfigs/instantiatebinary
+      - imagestreams
+      - imagestreams/layers
     verbs:
       - get
       - list
       - create
+      - update

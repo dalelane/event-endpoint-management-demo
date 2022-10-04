@@ -17,6 +17,7 @@ spec:
       script: |
         #!/bin/sh
 
+        cd /workspace/source/06-start-kafka-connectors/resources/kafka-connect/
         mkdir my-plugins
 
         #
@@ -24,7 +25,7 @@ spec:
         #
         mkdir my-plugins/stockprices
         cd my-plugins/stockprices
-        curl -o stockprices.jar --location https://github.com/dalelane/kafka-connect-stockprice-source/releases/download/v0.0.2/kafka-connect-stockprice-source-connector.jar
+        curl -o stockprices.jar --location https://github.com/dalelane/kafka-connect-stockprice-source/releases/download/v0.0.3/kafka-connect-stockprice-source-connector.jar
         cd ../..
 
         #
@@ -48,15 +49,3 @@ spec:
         #
         ls my-plugins/*
 
-        #
-        # build the docker image
-        #
-
-        BUILD_CONFIG=""
-        while [ "$BUILD_CONFIG" = "" ]
-        do
-          BUILD_CONFIG=`oc get kafkaconnects2i $(params.connect-s2i) -n $(params.namespace) -o jsonpath='{.status.buildConfigName}'`
-          echo "Using build config: $BUILD_CONFIG"
-          sleep 5
-        done
-        oc start-build $BUILD_CONFIG -n $(params.namespace) --from-dir ./my-plugins/

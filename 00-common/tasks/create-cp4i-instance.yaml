@@ -17,7 +17,7 @@ spec:
       image: image-registry.openshift-image-registry.svc:5000/openshift/tools
       script: |
         #!/bin/sh
-        cd source
+        cd /workspace/source
 
         echo "identifying template to use"
         INSTANCE_TEMPLATE="./00-common/resources/operands/$(params.instance-type).yaml"

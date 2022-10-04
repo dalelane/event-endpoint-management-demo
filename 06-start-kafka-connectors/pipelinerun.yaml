@@ -24,3 +24,6 @@ spec:
     - name: maven-settings
       configMap:
         name: pipeline-maven-settings
+    - name: docker-config-json
+      secret:
+        secretName: ibm-entitlement-key-config-json

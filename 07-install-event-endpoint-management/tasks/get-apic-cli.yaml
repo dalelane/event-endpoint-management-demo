@@ -11,11 +11,16 @@ spec:
   workspaces:
     - name: apic-cli
       description: workspace to write the apic CLI to
+  stepTemplate:
+    env:
+      - name: HOME
+        value: "/tekton/home"
   steps:
     - name: run-kubectl
       image: image-registry.openshift-image-registry.svc:5000/openshift/tools
       script: |
         #!/bin/sh
+        cd /tmp
 
         echo "identifying pod to download apic CLI from"
         APIC_POD_NAME=$(kubectl get pods -n "$(params.instance-namespace)" \
@@ -41,7 +46,7 @@ spec:
         echo "downloading and recombining CLI"
         rm -f toolkit-linux.tgz
         touch toolkit-linux.tgz
-        for part in partial-toolkit-linux-tgz.aa partial-toolkit-linux-tgz.ab partial-toolkit-linux-tgz.ac partial-toolkit-linux-tgz.ad partial-toolkit-linux-tgz.ae partial-toolkit-linux-tgz.af partial-toolkit-linux-tgz.ag partial-toolkit-linux-tgz.ah partial-toolkit-linux-tgz.ai partial-toolkit-linux-tgz.aj partial-toolkit-linux-tgz.ak partial-toolkit-linux-tgz.al partial-toolkit-linux-tgz.am partial-toolkit-linux-tgz.an
+        for part in partial-toolkit-linux-tgz.aa partial-toolkit-linux-tgz.ab partial-toolkit-linux-tgz.ac partial-toolkit-linux-tgz.ad partial-toolkit-linux-tgz.ae partial-toolkit-linux-tgz.af partial-toolkit-linux-tgz.ag partial-toolkit-linux-tgz.ah partial-toolkit-linux-tgz.ai partial-toolkit-linux-tgz.aj partial-toolkit-linux-tgz.ak partial-toolkit-linux-tgz.al partial-toolkit-linux-tgz.am partial-toolkit-linux-tgz.an partial-toolkit-linux-tgz.ao partial-toolkit-linux-tgz.ap
         do
           kubectl cp -n $(params.instance-namespace) $APIC_POD_NAME:/tmp/$part $part
           while [ $? -ne 0 ]; do

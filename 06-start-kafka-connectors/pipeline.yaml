@@ -13,6 +13,8 @@ spec:
       description: data used to set up the pipeline
     - name: maven-settings
       description: configmap with maven settings.xml used for maven tasks
+    - name: docker-config-json
+      description: secret with an IBM entitlement key in the form of a Docker config.json file
 
   params:
     - name: deployment-namespace
@@ -136,33 +138,6 @@ spec:
         - name: source
           workspace: pipeline-shared-workspace
 
-    # create the Connect cluster definition that will
-    #  request the worker pods for running connectors
-    - name: create-connect-s2i
-      taskRef:
-        name: create-resource
-      params:
-        - name: resource-yaml
-          value: "06-start-kafka-connectors/resources/kafka-connect/kafka-connect-s2i.yaml"
-        - name: namespace
-          value: "$(params.deployment-namespace)"
-      runAfter:
-        # need a working Event Streams to create a connect s2i
-        - check-eventstreams-ready
-        # need the API key secrets to add to the connect pod
-        - get-alphavantage-apikey
-        - get-twitter-apikey
-        # need credentials that will be used by connects2i
-        - create-connector-credentials
-        # need the avro schemas to use with the datagen connectors
-        - store-avro-schemas-for-datagen
-        # need the git repo which contains the Connect S2I spec
-        - clone-source-code
-      workspaces:
-        - name: source
-          workspace: pipeline-shared-workspace
-
-
     # some of the connectors we are using are not available
     #  as pre-built jars, so we need to clone their repos and
     #  build them now
@@ -273,11 +248,71 @@ spec:
         - name: source
           workspace: pipeline-shared-workspace
       runAfter:
-        # need a Connect Source-To-Image definition for the build
-        - create-connect-s2i
         # need the built connector jars to include in the image
         - build-datagen-connector-from-source-code
         - build-twitter-connector-from-source-code
+
+
+    - name: create-connect-docker-imagestream
+      taskRef:
+        name: create-resource
+      params:
+        - name: resource-yaml
+          value: "06-start-kafka-connectors/resources/kafka-connect/kafka-connect-image.yaml"
+        - name: namespace
+          value: "$(params.deployment-namespace)"
+      runAfter:
+        - clone-source-code
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+
+
+    - name: build-connector-docker-image
+      taskRef:
+        name: buildah-local
+      runAfter:
+        - create-connectors-docker-image
+        - create-connect-docker-imagestream
+      params:
+        - name: IMAGE
+          value: image-registry.openshift-image-registry.svc:5000/eventstreams/es-kafka-connect:latest
+        - name: CONTEXT
+          value: "06-start-kafka-connectors/resources/kafka-connect"
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
+        - name: dockerconfig
+          workspace: docker-config-json
+
+
+    # create the Connect cluster definition that will
+    #  request the worker pods for running connectors
+    - name: create-connect
+      taskRef:
+        name: create-resource
+      params:
+        - name: resource-yaml
+          value: "06-start-kafka-connectors/resources/kafka-connect/kafka-connect.yaml"
+        - name: namespace
+          value: "$(params.deployment-namespace)"
+      runAfter:
+        # need a working Event Streams to create a connect cluster
+        - check-eventstreams-ready
+        # need the API key secrets to add to the connect pod
+        - get-alphavantage-apikey
+        - get-twitter-apikey
+        # need credentials that will be used by connects2i
+        - create-connector-credentials
+        # need the avro schemas to use with the datagen connectors
+        - store-avro-schemas-for-datagen
+        # need the git repo which contains the Connect spec
+        - clone-source-code
+        # need the docker image for the Connect pods
+        - build-connector-docker-image
+      workspaces:
+        - name: source
+          workspace: pipeline-shared-workspace
 
 
     # create the Connect cluster definition that will
@@ -294,8 +329,7 @@ spec:
         # need the topics pre-prepared for connectors to send to
         - create-connect-topics
         # need a working Connect cluster to run connectors in
-        - create-connect-s2i
-        - create-connectors-docker-image
+        - create-connect
       workspaces:
         - name: source
           workspace: pipeline-shared-workspace

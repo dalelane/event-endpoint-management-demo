@@ -50,7 +50,7 @@ spec:
                 sleep 30
             done
 
-            if [ "$PHASE" = "Ready" ] || [ "$PHASE" = "Succeeded" ] ; then
+            if [ "$PHASE" = "Ready" ] || [ "$PHASE" = "Succeeded" ] || [ "$PHASE" = "Running" ] ; then
                 exit 0
             fi
 
