@@ -37,7 +37,7 @@ spec:
         cd ../..
 
         #
-        # get jars for the datagen connector
+        # get jars for the twitter connector
         #
         mkdir my-plugins/twitter
         cd my-plugins/twitter
