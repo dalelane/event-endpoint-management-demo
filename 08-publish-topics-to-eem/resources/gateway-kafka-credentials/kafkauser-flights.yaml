@@ -13,7 +13,7 @@ spec:
       - host: '*'
         operation: Read
         resource:
-          name: FLIGHTS
+          name: FLIGHT
           patternType: prefix
           type: topic
       - host: '*'
