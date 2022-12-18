@@ -11,4 +11,4 @@ spec:
   name: ibm-common-service-operator
   source: ibm-operator-catalog
   sourceNamespace: openshift-marketplace
-  startingCSV: ibm-common-service-operator.v3.19.4
+  startingCSV: ibm-common-service-operator.v3.19.7

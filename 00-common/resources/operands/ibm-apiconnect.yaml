@@ -5,11 +5,11 @@ metadata:
 spec:
   license:
     accept: true
-    license: L-RJON-CEBLEH
+    license: L-GVEN-GFUPVE
     metric: VIRTUAL_PROCESSOR_CORE
     use: nonproduction
   endpointTypes:
     - Events
   profile: n1xc10.m48
   storageClassName: STORAGECLASS_FROM_OVERRIDES
-  version: 10.0.5.1
+  version: 10.0.5.2

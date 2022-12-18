@@ -5,9 +5,8 @@ metadata:
 spec:
   license:
     accept: true
-    license: L-RJON-CD3JKX
-  mqDashboard: true
+    license: L-RJON-CJR2RX
   replicas: 1
   storage:
     class: STORAGECLASS_FROM_OVERRIDES
-  version: 2022.2.1
+  version: 2022.4.1

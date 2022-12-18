@@ -3,7 +3,7 @@ kind: EventStreams
 metadata:
   name: es
 spec:
-  version: 11.0.4
+  version: latest
   license:
     accept: true
     use: CloudPakForIntegrationNonProduction

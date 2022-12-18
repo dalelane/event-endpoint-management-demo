@@ -5,9 +5,9 @@ metadata:
   labels:
     operators.coreos.com/ibm-apiconnect.eem: ''
 spec:
-  channel: v3.1
+  channel: v3.2
   installPlanApproval: Automatic
   name: ibm-apiconnect
   source: ibm-operator-catalog
   sourceNamespace: openshift-marketplace
-  startingCSV: ibm-apiconnect.v3.1.0
+  startingCSV: ibm-apiconnect.v3.2.0
