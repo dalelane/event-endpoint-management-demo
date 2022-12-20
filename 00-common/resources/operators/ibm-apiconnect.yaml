@@ -3,7 +3,7 @@ kind: Subscription
 metadata:
   name: ibm-apiconnect
   labels:
-    operators.coreos.com/ibm-apiconnect.eem: ''
+    operators.coreos.com/ibm-apiconnect.eventendpointmanagement: ''
 spec:
   channel: v3.2
   installPlanApproval: Automatic

@@ -6,9 +6,9 @@ metadata:
   labels:
     operators.coreos.com/ibm-common-service-operator.openshift-operators: ''
 spec:
-  channel: v3
+  channel: v3.22
   installPlanApproval: Automatic
   name: ibm-common-service-operator
   source: ibm-operator-catalog
   sourceNamespace: openshift-marketplace
-  startingCSV: ibm-common-service-operator.v3.19.7
+  startingCSV: ibm-common-service-operator.v3.22.0

@@ -46,7 +46,7 @@ spec:
         echo "downloading and recombining CLI"
         rm -f toolkit-linux.tgz
         touch toolkit-linux.tgz
-        for part in partial-toolkit-linux-tgz.aa partial-toolkit-linux-tgz.ab partial-toolkit-linux-tgz.ac partial-toolkit-linux-tgz.ad partial-toolkit-linux-tgz.ae partial-toolkit-linux-tgz.af partial-toolkit-linux-tgz.ag partial-toolkit-linux-tgz.ah partial-toolkit-linux-tgz.ai partial-toolkit-linux-tgz.aj partial-toolkit-linux-tgz.ak partial-toolkit-linux-tgz.al partial-toolkit-linux-tgz.am partial-toolkit-linux-tgz.an partial-toolkit-linux-tgz.ao partial-toolkit-linux-tgz.ap
+        for part in partial-toolkit-linux-tgz.aa partial-toolkit-linux-tgz.ab partial-toolkit-linux-tgz.ac partial-toolkit-linux-tgz.ad partial-toolkit-linux-tgz.ae partial-toolkit-linux-tgz.af partial-toolkit-linux-tgz.ag partial-toolkit-linux-tgz.ah partial-toolkit-linux-tgz.ai partial-toolkit-linux-tgz.aj partial-toolkit-linux-tgz.ak partial-toolkit-linux-tgz.al partial-toolkit-linux-tgz.am partial-toolkit-linux-tgz.an partial-toolkit-linux-tgz.ao partial-toolkit-linux-tgz.ap partial-toolkit-linux-tgz.aq
         do
           kubectl cp -n $(params.instance-namespace) $APIC_POD_NAME:/tmp/$part $part
           while [ $? -ne 0 ]; do
