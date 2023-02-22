@@ -10,4 +10,4 @@ spec:
   name: ibm-eventstreams
   source: ibm-operator-catalog
   sourceNamespace: openshift-marketplace
-  startingCSV: ibm-eventstreams.v3.1.3
+  startingCSV: ibm-eventstreams.v3.1.4
