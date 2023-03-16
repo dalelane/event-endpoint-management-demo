@@ -10,6 +10,8 @@ spec:
   adminApi: {}
   adminUI: {}
   apicurioRegistry: {}
+  collector: {}
+  kafkaProxy: {}
   strimziOverrides:
     kafka:
       replicas: 3
@@ -18,9 +20,9 @@ spec:
         supportsAdminApi: true
         authorizerClass: com.ibm.eventstreams.runas.authorizer.RunAsAuthorizer
       config:
-        inter.broker.protocol.version: '3.2'
+        inter.broker.protocol.version: '3.3'
         log.cleaner.threads: 6
-        log.message.format.version: '3.2'
+        log.message.format.version: '3.3'
         num.io.threads: 24
         num.network.threads: 9
         num.replica.fetchers: 3
@@ -38,12 +40,27 @@ spec:
         type: persistent-claim
         size: 20Gi
         class: STORAGECLASS_FROM_OVERRIDES
+      metricsConfig:
+        type: jmxPrometheusExporter
+        valueFrom:
+          configMapKeyRef:
+            key: kafka-metrics-config.yaml
+            name: metrics-config
+    kafkaExporter:
+      groupRegex: ".*"
+      topicRegex: ".*"
     zookeeper:
       replicas: 3
       storage:
         type: persistent-claim
         size: 3Gi
         class: STORAGECLASS_FROM_OVERRIDES
+      metricsConfig:
+        type: jmxPrometheusExporter
+        valueFrom:
+          configMapKeyRef:
+            key: zookeeper-metrics-config.yaml
+            name: metrics-config
     entityOperator:
       topicOperator: {}
   requestIbmServices:
