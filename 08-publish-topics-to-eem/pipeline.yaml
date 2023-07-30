@@ -106,25 +106,6 @@ spec:
         - name: source
           workspace: pipeline-shared-workspace
 
-    - name: create-gateway-kafka-credentials-twitter
-      taskRef:
-        name: create-kafka-credentials
-      params:
-        - name: credentials-username
-          value: "gateway-credentials-twitter"
-        - name: credentials-spec
-          value: "08-publish-topics-to-eem/resources/gateway-kafka-credentials/kafkauser-twitter.yaml"
-        - name: namespace
-          value: "$(params.es-namespace)"
-      runAfter:
-        # need a working Event Streams to create credentials
-        - check-eventstreams-ready
-        # need the git repo which contains the credential ACLs
-        - clone-source-code
-      workspaces:
-        - name: source
-          workspace: pipeline-shared-workspace
-
     - name: create-gateway-kafka-credentials-random
       taskRef:
         name: create-kafka-credentials
@@ -199,32 +180,6 @@ spec:
         - clone-source-code
         # need the kafka usernames to be ready to use
         - create-gateway-kafka-credentials-flights
-
-    - name: generate-twitter-asyncapi
-      taskRef:
-        name: generate-asyncapi
-      params:
-        - name: es-name
-          value: "$(params.es-instance-name)"
-        - name: es-namespace
-          value: "$(params.es-namespace)"
-        - name: kafka-username
-          value: "gateway-credentials-twitter"
-        - name: input-doc-template
-          value: "template-twitter_1.0.0.yaml"
-        - name: output-doc-filename
-          value: "twitter_1.0.0.yaml"
-      workspaces:
-        - name: output
-          workspace: pipeline-shared-workspace
-      runAfter:
-        # need to wait until the schema registry is ready
-        #  to be able to fetch schemas from it
-        - check-eventstreams-ready
-        # need the templates in git to generate docs
-        - clone-source-code
-        # need the kafka usernames to be ready to use
-        - create-gateway-kafka-credentials-twitter
 
     - name: generate-random-asyncapi
       taskRef:
@@ -309,5 +264,4 @@ spec:
         - apic-login
         - generate-stockprices-asyncapi
         - generate-flights-asyncapi
-        - generate-twitter-asyncapi
         - generate-random-asyncapi

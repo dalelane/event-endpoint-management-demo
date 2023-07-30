@@ -58,9 +58,6 @@ spec:
       - name: alphavantage
         secret:
           secretName: alphavantage
-      - name: twitter
-        secret:
-          secretName: twitter
       - name: datagen-avro-schemas
         configMap:
           name: datagen-avro-schemas

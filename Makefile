@@ -70,9 +70,6 @@ prepare_entitlement_key: prepare_credentials_namespace
 prepare_stockprice_apikey: prepare_credentials_namespace
 	@oc apply -f ./alphavantage-apikey.yaml
 
-prepare_twitter_apikey: prepare_credentials_namespace
-	@oc apply -f ./twitter-apikey.yaml
-
 prepare_cp4i_overrides: create_pipeline_namespace
 	@oc apply -f ./cp4i-overrides.yaml
 
@@ -84,7 +81,7 @@ verify_tekton_pipelines_available: create_pipeline_namespace
 	@$(call ensure_operator_installed,"openshift-pipelines-operator-rh","./01-install-tekton/tekton-subscription.yaml")
 
 
-prepare_general_pipeline: verify_tekton_pipelines_available prepare_entitlement_key set_namespace prepare_github_credentials prepare_stockprice_apikey prepare_twitter_apikey prepare_cp4i_overrides
+prepare_general_pipeline: verify_tekton_pipelines_available prepare_entitlement_key set_namespace prepare_github_credentials prepare_stockprice_apikey prepare_cp4i_overrides
 	@oc apply -f ./00-common/permissions
 	@oc apply -f ./00-common/tasks
 

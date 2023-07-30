@@ -2,7 +2,6 @@ github-credentials.yaml
 ibm-entitlement-key.yaml
 dockerconfig.json
 alphavantage-apikey.yaml
-twitter-apikey.yaml
 99-test-gateway/*.jar
 99-test-gateway/*.class
 99-test-gateway/eventgateway.p12

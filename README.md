@@ -40,8 +40,6 @@ oc login ...
     - based on [`template-dockerconfig.json`](./template-dockerconfig.json) - Docker config json with an [IBM Entitlement Key](https://www.ibm.com/docs/en/cloud-paks/cp-integration/2021.3?topic=installing-applying-your-entitlement-key) for access to Cloud Pak for Integration software
 - `alphavantage-apikey.yaml`
     - based on [`template-alphavantage-apikey.yaml`](./template-alphavantage-apikey.yaml) - secret with an [API key from AlphaVantage](https://www.alphavantage.co/support/#api-key) - which should be created in the `pipeline-credentials` namespace
-- `twitter-apikey.yaml`
-    - based on [`template-twitter-apikey.yaml`](./template-twitter-apikey.yaml) - secret with an [API key from Twitter](https://developer.twitter.com) - which should be created in the `pipeline-credentials` namespace
 
 
 ### 3. start deployment

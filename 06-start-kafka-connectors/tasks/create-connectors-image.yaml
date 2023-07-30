@@ -37,14 +37,6 @@ spec:
         cd ../..
 
         #
-        # get jars for the twitter connector
-        #
-        mkdir my-plugins/twitter
-        cd my-plugins/twitter
-        cp /workspace/source/kafka-connect-twitter/target/components/packages/jcustenborder-kafka-connect-twitter-*-SNAPSHOT/jcustenborder-kafka-connect-twitter-*-SNAPSHOT/lib/*.jar .
-        cd ../..
-
-        #
         # verify
         #
         ls my-plugins/*

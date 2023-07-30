@@ -73,7 +73,7 @@ spec:
           workspace: pipeline-shared-workspace
 
 
-    # copy the API keys that the connectors will use
+    # copy the API key that the connector will use
     - name: get-alphavantage-apikey
       taskRef:
         name: copy-secret
@@ -86,18 +86,7 @@ spec:
           value: "alphavantage"
         - name: target-namespace
           value: "$(params.deployment-namespace)"
-    - name: get-twitter-apikey
-      taskRef:
-        name: copy-secret
-      params:
-        - name: source-secret-name
-          value: "twitter"
-        - name: source-namespace
-          value: "pipeline-credentials"
-        - name: target-secret-name
-          value: "twitter"
-        - name: target-namespace
-          value: "$(params.deployment-namespace)"
+
 
     # create credentials that the connectors can use to
     #  produce events to the Kafka cluster
@@ -157,22 +146,6 @@ spec:
       workspaces:
         - name: output
           workspace: pipeline-shared-workspace
-    - name: clone-twitter-connector-source-code
-      taskRef:
-        name: git-clone
-        kind: ClusterTask
-      params:
-        - name: url
-          value: "https://github.com/jcustenborder/kafka-connect-twitter"
-        - name: deleteExisting
-          value: "false"
-        - name: subdirectory
-          value: "kafka-connect-twitter"
-      runAfter:
-        - clone-source-code
-      workspaces:
-        - name: output
-          workspace: pipeline-shared-workspace
 
     - name: build-datagen-connector-from-source-code
       taskRef:
@@ -203,35 +176,6 @@ spec:
           # source code from clone-connector-source-code task
         - name: source
           workspace: pipeline-shared-workspace
-    - name: build-twitter-connector-from-source-code
-      taskRef:
-        name: maven
-      runAfter:
-        - clone-twitter-connector-source-code
-      params:
-        # goals from doc in
-        # https://github.com/jcustenborder/kafka-connect-twitter#running-in-development
-        - name: GOALS
-          value:
-            - -DskipTests
-            - clean
-            - package
-        # project to build
-        - name: CONTEXT_DIR
-          value: "kafka-connect-twitter"
-        # use a more recent version of the maven image, as
-        #  the default image doesn't have git (which is needed
-        #  for building this project)
-        - name: MAVEN_IMAGE
-          value: "gcr.io/cloud-builders/mvn:latest"
-      workspaces:
-          # add https mirrors to avoid build failures
-          #  using the default insecure repos
-        - name: maven-settings
-          workspace: maven-settings
-          # source code from clone-connector-source-code task
-        - name: source
-          workspace: pipeline-shared-workspace
 
 
     # build the custom Docker image for the Connect cluster
@@ -248,9 +192,8 @@ spec:
         - name: source
           workspace: pipeline-shared-workspace
       runAfter:
-        # need the built connector jars to include in the image
+        # need the built connector jar to include in the image
         - build-datagen-connector-from-source-code
-        - build-twitter-connector-from-source-code
 
 
     - name: create-connect-docker-imagestream
@@ -299,9 +242,8 @@ spec:
       runAfter:
         # need a working Event Streams to create a connect cluster
         - check-eventstreams-ready
-        # need the API key secrets to add to the connect pod
+        # need the API key secret to add to the connect pod
         - get-alphavantage-apikey
-        - get-twitter-apikey
         # need credentials that will be used by connects2i
         - create-connector-credentials
         # need the avro schemas to use with the datagen connectors

@@ -31,7 +31,7 @@ public class SampleApplication {
     props.put("ssl.endpoint.identification.algorithm", "");
 
     KafkaConsumer consumer = new KafkaConsumer<String, byte[]>(props);
-    consumer.subscribe(Collections.singletonList("TWITTER.KAFKA"));
+    consumer.subscribe(Collections.singletonList("STOCK.PRICES.IBM"));
     try {
       while(true) {
         ConsumerRecords<String, byte[]> records = consumer.poll(Duration.ofSeconds(1));
@@ -42,7 +42,7 @@ public class SampleApplication {
             JsonNode jsonNode = om.readTree(value);
 
             // Do something with your JSON data
-            Object somefield = jsonNode.get("Text");
+            Object somefield = jsonNode.get("low");
             System.out.println(somefield);
           }
         }

@@ -14,8 +14,6 @@ apis:
     $ref: techcompanies_1.0.0.yaml
   flights1.0.0:
     $ref: flights_1.0.0.yaml
-  twitter1.0.0:
-    $ref: twitter_1.0.0.yaml
   random1.0.0:
     $ref: random_1.0.0.yaml
 
