@@ -69,7 +69,7 @@ run the make command (see below) while logged in (with admin privileges) to an O
 | `make pipeline_eventstreams`            | creates an Event Streams Kafka cluster and an Apicurio schema registry   |
 | `make pipeline_kafkaconnectors`         | creates connectors that generate multiple streams of events              |
 | `make pipeline_eventendpointmanagement` | creates and sets up an instance of Event Endpoint Management             |
-| `make pipeline_stockpricesasyncapi`     | generates and publishes API documentation for the connectors             |
+| `make pipeline_asyncapi`                | generates and publishes API documentation for the connectors             |
 
 ### remove pipeline resources
 
@@ -82,5 +82,5 @@ run the make command (see below) while logged in (with admin privileges) to an O
 | `make cleanup_pipeline_eventstreams`            | removes pipeline resources used to create Event Streams                 |
 | `make cleanup_pipeline_kafkaconnectors`         | removes pipeline resources used to build connectors                     |
 | `make cleanup_pipeline_eventendpointmanagement` | removes pipeline resources used to create Event Endpoint Management     |
-| `make cleanup_pipeline_stockpricesasyncapi`     | removes pipeline resources used to generate and publishes API docs      |
+| `make cleanup_pipeline_asyncapi`                | removes pipeline resources used to generate and publishes API docs      |
 
