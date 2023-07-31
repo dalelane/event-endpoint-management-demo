@@ -21,9 +21,8 @@ spec:
         supportsAdminApi: true
         authorizerClass: com.ibm.eventstreams.runas.authorizer.RunAsAuthorizer
       config:
-        inter.broker.protocol.version: '3.3'
+        inter.broker.protocol.version: '3.4'
         log.cleaner.threads: 6
-        log.message.format.version: '3.3'
         num.io.threads: 24
         num.network.threads: 9
         num.replica.fetchers: 3
