@@ -1,3 +1,9 @@
+___
+
+**NOTE:** This demo installs version 10.x of IBM Event Endpoint Management. If you want to try version 11.x, then I recommend trying the demo from https://ibm.github.io/event-automation/tutorials/
+
+___
+
 # Event Endpoint Management demo
 
 ![architecture-diagram](./docs/simplified-architecture.png)
